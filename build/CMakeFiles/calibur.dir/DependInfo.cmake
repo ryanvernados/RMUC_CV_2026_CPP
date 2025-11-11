@@ -8,9 +8,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/li/Desktop/RMUC_2026_CV_CPP_/calibur/config.cc" "CMakeFiles/calibur.dir/calibur/config.cc.o" "gcc" "CMakeFiles/calibur.dir/calibur/config.cc.o.d"
-  "/home/li/Desktop/RMUC_2026_CV_CPP_/calibur/log.cpp" "CMakeFiles/calibur.dir/calibur/log.cpp.o" "gcc" "CMakeFiles/calibur.dir/calibur/log.cpp.o.d"
-  "/home/li/Desktop/RMUC_2026_CV_CPP_/calibur/util.cpp" "CMakeFiles/calibur.dir/calibur/util.cpp.o" "gcc" "CMakeFiles/calibur.dir/calibur/util.cpp.o.d"
+  "/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/calibur/config.cc" "CMakeFiles/calibur.dir/calibur/config.cc.o" "gcc" "CMakeFiles/calibur.dir/calibur/config.cc.o.d"
+  "/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/calibur/log.cpp" "CMakeFiles/calibur.dir/calibur/log.cpp.o" "gcc" "CMakeFiles/calibur.dir/calibur/log.cpp.o.d"
+  "/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/calibur/usb_communication.cpp" "CMakeFiles/calibur.dir/calibur/usb_communication.cpp.o" "gcc" "CMakeFiles/calibur.dir/calibur/usb_communication.cpp.o.d"
+  "/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/calibur/util.cpp" "CMakeFiles/calibur.dir/calibur/util.cpp.o" "gcc" "CMakeFiles/calibur.dir/calibur/util.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

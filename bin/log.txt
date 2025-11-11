@@ -1,7 +1,2 @@
-2025-09-27 07:24:25	9825	0	[INFO]	[system]	/home/li/Desktop/RMUC_2026_CV_CPP_/tests/test_config.cc:214	hello system
-
-n name =  age= 0 sex= 0] new_value=[Person name = calibur age= 31 sex= 1]
-2025-09-27 07:24:25	9825	0	[INFO]	[root]	/home/li/Desktop/RMUC_2026_CV_CPP_/tests/test_config.cc:204	after: [Person name =  age= 0 sex= 0]name: ""
-age: 0
-sex: false
-2025-09-27 07:24:25	9825	0	[INFO]	[root]	/home/li/Desktop/RMUC_2026_CV_CPP_/calibur/log.cpp:747	On logger ref has been changed
+2025-11-09 17:50:23	ERROR	test macro error
+2025-11-09 17:50:23	ERROR	test macro fmt error aa

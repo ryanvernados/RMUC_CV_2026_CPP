@@ -9,12 +9,13 @@ include_directories(/apps/yaml-cpp/include)
 link_directories(/apps/yaml-cpp/lib)
 
 find_library(YAMLCPP yaml-cpp)
-message("***", ${YAMLCPP})
+message("***" ${YAMLCPP})
 
 set(LIB_SRC 
     calibur/log.cpp
     calibur/util.cpp 
     calibur/config.cc 
+    calibur/usb_communication.cpp
 )
 
 add_library(calibur SHARED ${LIB_SRC})
@@ -25,5 +26,8 @@ target_link_libraries(test calibur ${YAMLCPP})
 
 add_executable(test_config tests/test_config.cc)
 target_link_libraries(test_config calibur ${YAMLCPP})
+
+add_executable(test_send_data tests/test_send_data.cc)
+target_link_libraries(test_send_data calibur ${YAMLCPP})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

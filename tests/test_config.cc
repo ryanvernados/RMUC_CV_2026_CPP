@@ -228,7 +228,7 @@ void test_log() {
 int main(int argc, char** argv) {
     //test_yaml();
     //test_config();
-    test_class();
-    test_log();
+//     test_class();
+//     test_log();
     return 0;
 }

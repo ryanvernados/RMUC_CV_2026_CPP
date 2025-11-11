@@ -1,5 +1,6 @@
-/home/li/Desktop/RMUC_2026_CV_CPP_/build/CMakeFiles/calibur.dir
-/home/li/Desktop/RMUC_2026_CV_CPP_/build/CMakeFiles/test.dir
-/home/li/Desktop/RMUC_2026_CV_CPP_/build/CMakeFiles/test_config.dir
-/home/li/Desktop/RMUC_2026_CV_CPP_/build/CMakeFiles/edit_cache.dir
-/home/li/Desktop/RMUC_2026_CV_CPP_/build/CMakeFiles/rebuild_cache.dir
+/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/build/CMakeFiles/calibur.dir
+/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/build/CMakeFiles/test.dir
+/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/build/CMakeFiles/test_config.dir
+/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/build/CMakeFiles/test_send_data.dir
+/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/build/CMakeFiles/edit_cache.dir
+/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/build/CMakeFiles/rebuild_cache.dir

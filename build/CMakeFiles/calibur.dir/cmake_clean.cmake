@@ -1,10 +1,12 @@
 file(REMOVE_RECURSE
-  "/home/li/Desktop/RMUC_2026_CV_CPP_/lib/libcalibur.pdb"
-  "/home/li/Desktop/RMUC_2026_CV_CPP_/lib/libcalibur.so"
+  "/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/lib/libcalibur.pdb"
+  "/home/ryan/Documents/nusrobomaster/RMUC_CV_2026_CPP/lib/libcalibur.so"
   "CMakeFiles/calibur.dir/calibur/config.cc.o"
   "CMakeFiles/calibur.dir/calibur/config.cc.o.d"
   "CMakeFiles/calibur.dir/calibur/log.cpp.o"
   "CMakeFiles/calibur.dir/calibur/log.cpp.o.d"
+  "CMakeFiles/calibur.dir/calibur/usb_communication.cpp.o"
+  "CMakeFiles/calibur.dir/calibur/usb_communication.cpp.o.d"
   "CMakeFiles/calibur.dir/calibur/util.cpp.o"
   "CMakeFiles/calibur.dir/calibur/util.cpp.o.d"
 )
