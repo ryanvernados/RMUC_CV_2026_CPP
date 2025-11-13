@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Docs\NUS\Calibur\RMUC_CV_2026_CPP\tests\test.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Docs\NUS\Calibur\RMUC_CV_2026_CPP\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{CA297598-B3DC-3866-A098-479DFC6DE9E4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,10 @@
+^C:\DOCS\NUS\CALIBUR\RMUC_CV_2026_CPP\BUILD\CMAKEFILES\138CA77FA69FCF1463B9B29C8BE64E24\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Docs/NUS/Calibur/RMUC_CV_2026_CPP -BC:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/build/calibur.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

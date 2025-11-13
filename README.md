@@ -67,3 +67,10 @@ Inherits from the coroutine scheduler and encapsulates epoll (Linux), supporting
 (implemented using epoll with millisecond precision). 
 Provides capabilities to add, remove, and cancel socket read/write events. 
 Supports one-shot timers, recurring timers, and conditional timers.
+
+## SETTING UP DETECTION 
+
+## 1. Install OpenCV 
+from Windows: https://opencv.org/releases/
+
+
