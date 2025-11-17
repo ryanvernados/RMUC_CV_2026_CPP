@@ -1,0 +1,8 @@
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/calibur.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/test_camera.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/test_yolo11.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/test.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/test_config.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/test_send_data.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/edit_cache.dir
+/home/mic-743/Code/aimbot_cpp/RMUC_CV_2026_C-/build/CMakeFiles/rebuild_cache.dir

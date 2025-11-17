@@ -1,1 +1,0 @@
-g++ calibur/test_camera.cpp -I/opt/MVS/include -I/usr/include/opencv4 -L/opt/MVS/lib/aarch64 -lMvCameraControl -L/usr/lib/aarch64-linux-gnu -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_videoio -o ./bin/test_camera

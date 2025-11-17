@@ -1,6 +1,0 @@
-C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/tests/CMakeFiles/calibur.dir
-C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/tests/CMakeFiles/test.dir
-C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/tests/CMakeFiles/test_config.dir
-C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/tests/CMakeFiles/test_send_data.dir
-C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/tests/CMakeFiles/ALL_BUILD.dir
-C:/Docs/NUS/Calibur/RMUC_CV_2026_CPP/tests/CMakeFiles/ZERO_CHECK.dir
