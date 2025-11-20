@@ -51,9 +51,9 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
                         PredictionOut &out)
 {
     // Reuse small buffers instead of reallocating every call
-    static thread_local std::vector<float> tvec;
-    static thread_local std::vector<float> pos_lead;
-    static thread_local std::vector<float> correction;
+    static thread_local Eigen:Vector3f tvec;
+    static thread_local Eigen:Vector3f pos_lead;
+    static thread_local Eigen:Vector2f correction;
     static thread_local float yaw_lead, imu_yaw, imu_pitch;
 
     // --- bullet_speed filtering ---
@@ -101,7 +101,7 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     bool success = get_imu_yaw_pitch(this->shared_, imu_yaw, imu_pitch);
     //if success: ...
     Eigen::Matrix3f R_world2cam = make_R_world2cam_from_yaw_pitch(imu_yaw, imu_pitch);
-    tvec = pos_world2cam(tvec, R_world2cam);
+    tvec = R_world2cam * tvec;
     yaw_lead = yaw_lead - imu_yaw;    // + initial_yaw?
     calculate_robot_final_target_point(pos_lead, yaw_lead, state[14], state[12], state[13]);
 
@@ -130,7 +130,7 @@ inline bool is_converged(float v, float threshold) {
     return std::fabs(v) < threshold;
 }
 
-inline float t_lead_calculation(const std::vector<float> &tvec, const float &bullet_speed) {
+inline float t_lead_calculation(const Eigen::Vector3f> &tvec, const float &bullet_speed) {
     const float dx = tvec[0];
     const float dy = tvec[1];
     const float dz = tvec[2];
@@ -151,7 +151,7 @@ inline int sector_from_yaw(const float yaw) {
     return static_cast<int>(std::floor(sector_f)) & 3;
 }
 
-inline void calculate_robot_final_target_point(std::vector<float> &final_pos, float &final_yaw,
+inline void calculate_robot_final_target_point(Eigen::Vector3f &final_pos, float &final_yaw,
                                         const float height_offset, const float r1, const float r2) {
     // yaw with yaw_rate and yaw_acc
     const int armor_plate_idx = sector_from_yaw(final_yaw);
@@ -169,7 +169,7 @@ inline void calculate_robot_final_target_point(std::vector<float> &final_pos, fl
     final_pos[1] += armor_plate_idx ? height_offset : 0;
 }
 
-inline void motion_model_robot_pos(const std::vector<float> &state, std::vector<float> &robot_center_lead, float &yaw_lead, const float &t) {
+inline void motion_model_robot_pos(const Eigen::Vector3f &state, Eigen::Vector3f &robot_center_lead, float &yaw_lead, const float &t) {
     const float t2 = t * t;
     robot_center_lead[0] = state[0] + state[3] * t + 0.5 * state[6] * t2;
     robot_center_lead[1] = state[1] + state[4] * t + 0.5 * state[7] * t2;
@@ -177,9 +177,7 @@ inline void motion_model_robot_pos(const std::vector<float> &state, std::vector<
     yaw_lead = state[9] + state[10] * t + state[11] * t2;
 }
 
-inline std::vector<float> calculate_gimbal_correction(const std::vector<float> &tvec) {
-    std::vector<float> correction(2);
-
+inline void calculate_gimbal_correction(const Eigen::Vector3f &tvec, Eigen::Vector2f &correction) {
     const float x = tvec[0];
     const float y = tvec[1];
     const float z = tvec[2];
@@ -189,7 +187,7 @@ inline std::vector<float> calculate_gimbal_correction(const std::vector<float> &
     return correction;
 }
 
-inline int should_fire(const std::vector<float> &tvec) {
+inline int should_fire(const Eigen::Vector3f &tvec) {
     // Assume tvec.size() >= 2 (tvec[0]=x, tvec[1]=y in angle or pixel units)
     constexpr float HALF = 0.5f;
     const float x_tolerance = WIDTH_TOLERANCE  * TOLERANCE_COEFF * HALF;
