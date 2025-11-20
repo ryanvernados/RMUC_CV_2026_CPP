@@ -10,6 +10,8 @@
 using Clock     = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
 
+#define ROBOT_STATE_VEC_LEN     15
+
 // =======================
 // Data Structures
 // =======================
@@ -29,17 +31,14 @@ struct IMUState {
 };
 
 struct DetectionResult {
-    float bbox_x   = 0.0f;
-    float bbox_y   = 0.0f;
-    float bbox_w   = 0.0f;
-    float bbox_h   = 0.0f;
+    cv::Rect detection;
+    std::vector<cv::Point2f> keypoints;
 
-    std::vector<std::pair<float, float>> keypoints;
     int   class_id         = -1;
     float confidence_level = 0.0f;
 
-    std::vector<float> tvec;  // size 3
-    std::vector<float> rvec;  // size 3
+    cv::Vec3f tvec;  // size 3
+    cv::Vec3f rvec;  // size 3
 
     float yaw_rad    = 0.0f;
     int   armor_type = 0;     // 0 = small, 1 = big, etc.
@@ -51,7 +50,7 @@ enum PfStateFlag {
 };
 
 struct RobotState {
-    std::vector<float> state; // size 15
+    std::array<float, ROBOT_STATE_VEC_LEN> state; // size 15
     int   class_id  = -1;
     int   pf_state  = PF_STATE_OK;
     TimePoint timestamp;
