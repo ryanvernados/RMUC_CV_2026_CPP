@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "types.hpp"
+#include "pf/rbpf.cuh"
 
 
 // ------------------------------------------- Constants -------------------------------------------

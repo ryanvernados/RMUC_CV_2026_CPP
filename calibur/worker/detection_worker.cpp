@@ -313,22 +313,28 @@ std::unique_ptr<RobotState>
 DetectionWorker::form_robot(const std::vector<DetectionResult> &armors) {
     if (armors.empty() || armors.size() > 2) {
         if (!this->has_prev_robot_) {
-            // No previous state yet → nothing meaningful to return
             return nullptr;
         }
-        // Return a copy of the previous robot state
         return std::make_unique<RobotState>(prev_robot_);
     }
-    auto rs = std::make_unique<RobotState>();
-    bool form_robot_success
-    if (armors.size() == 1) {
-        form_robot_success = from_one_armor(armors[0], prev_robot_, this->has_prev_robot_);
-    } else {
-        form_robot_success = from_two_armors(armors[0], armors[1], prev_robot_, this->has_prev_robot_);
-    }
 
-    return form_robot_success ? rs : std::make_unique<RobotState>(prev_robot_);
+    auto rs = std::make_unique<RobotState>();
+    bool form_ok = false;
+    if (armors.size() == 1) {
+        form_ok = from_one_armor(armors[0], prev_robot_, this->has_prev_robot_);
+    } else {
+        form_ok = from_two_armors(armors[0], armors[1], prev_robot_, this->has_prev_robot_);
+    }
+    if (form_ok) {
+        return std::move(rs);
+    }
+    if (this->has_prev_robot_) {
+        return std::make_unique<RobotState>(prev_robot_);
+    }
+    return nullptr;
 }
+
+
 
 inline void cam2world(DetectionResult &det, const Eigen::Matrix3f &R_world2cam,
                      const float imu_yaw, const float imu_pitch) {
@@ -390,7 +396,7 @@ inline bool from_one_armor(const DetectionResult &det, RobotState &robot, bool &
     } else {        
         //need to assume radius and height is the same as previous
         const float prev_yaw = robot.state[IDX_YAW];
-        const sector = sector_yaw(yaw_meas, prev_yaw);
+        const int sector = sector_yaw(yaw_meas, prev_yaw);
         robot.state[IDX_YAW] = wrap_pi(yaw_meas + M_PI_2 * sector);
         const float r = sector % 2 ? robot.state[IDX_R2] : robot.state[IDX_R1];
         const float h = sector % 2 ? robot.state[IDX_H] : 0;
@@ -409,7 +415,7 @@ inline bool correct_yaw_to_90(float &yaw1, float &yaw2) {
     yaw2 = wrap_pi(mid_point + M_PI_4);
 }
 
-inline void solve_linear_sys(
+inline bool solve_linear_sys(
     float yaw1, float yaw2,
     float det1_x, float det1_z,
     float det2_x, float det2_z,
@@ -438,9 +444,9 @@ inline void solve_linear_sys(
 
 inline bool from_two_armors(const DetectionResult &det1, const DetectionResult &det2,
                            RobotState &robot, bool &valid) {
-    const float yaw1 = det1.yaw_rad;
-    const float yaw2 = det2.yaw_rad;
-    coorect_yaw_to_90(yaw1, yaw2);
+    float yaw1 = det1.yaw_rad;
+    float yaw2 = det2.yaw_rad;
+    correct_yaw_to_90(yaw1, yaw2);
     if (!valid) {
         //define the robot yaw to be det1's yaw, TODO: make sure that det1 yaw < det 2 yaw and they are in -90 < yaw < 90 deg
         robot.state[IDX_YAW]  = yaw1;
@@ -449,20 +455,21 @@ inline bool from_two_armors(const DetectionResult &det1, const DetectionResult &
         bool solve_lin_sys_success = solve_linear_sys(yaw1, yaw2, det1.tvec[0], det1.tvec[2], det2.tvec[0], det2.tvec[2],
                                             robot.state[IDX_TX], robot.state[IDX_TZ], robot.state[IDX_R1], robot.state[IDX_R2]);
         valid = solve_lin_sys_success;
+        return solve_lin_sys_success; 
     } else {
         const float prev_yaw = robot.state[IDX_YAW];
         const int sector_armor_1 = sector_yaw(yaw1, prev_yaw);
         const int sector_armor_2 = sector_yaw(yaw2, prev_yaw);
 //check correctness -> a way to calculate true yaw based on the 2 measured yaw
-        float y1 = wrap_pi(yaw1 + sector_armor1 * M_PI_2);
-        float y2 = wrap_pi(yaw2 + sector_armor2 * M_PI_2);
+        float y1 = wrap_pi(yaw1 + sector_armor_1 * M_PI_2);
+        float y2 = wrap_pi(yaw2 + sector_armor_2 * M_PI_2);
         float mean_yaw = std::atan2(std::sin(y1) + std::sin(y2), std::cos(y1) + std::cos(y2));
-        robot.state[IDX_yaw] = wrap_pi(mean_yaw);
+        robot.state[IDX_YAW] = wrap_pi(mean_yaw);
         
         robot.state[IDX_H]   = (sector_armor_1 % 2) ? (det2.tvec[1] - det1.tvec[1]) : (det1.tvec[1] - det2.tvec[1]);
         robot.state[IDX_TY]  = (sector_armor_1 % 2) ? det2.tvec[1] : det1.tvec[1];
         bool solve_lin_sys_success = solve_linear_sys(yaw1, yaw2, det1.tvec[0], det1.tvec[2], det2.tvec[0], det2.tvec[2],
                                             robot.state[IDX_TX], robot.state[IDX_TZ], robot.state[IDX_R1], robot.state[IDX_R2]);
+        return solve_lin_sys_success;
     }
-    return solve_lin_sys_success; 
 }
