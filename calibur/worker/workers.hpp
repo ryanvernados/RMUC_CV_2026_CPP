@@ -3,6 +3,7 @@
 #include <atomic>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 #include "types.hpp"
 
@@ -85,6 +86,14 @@ private:
     uint64_t    last_cam_ver_;
     RobotState prev_robot_{};
     bool       has_prev_robot_ = false;
+
+    // Camera intrinsics
+    cv::Mat     camera_matrix;
+    cv::Mat     dist_coeffs;
+
+    // Yaw optimization helpers
+    std::unordered_map<int, float> yaw_smooth_state;
+    float yaw_alpha = 0.3f; // smoothing factor: 0 = very smooth, 1 = no smoothing
 
     void sleep_small();
 

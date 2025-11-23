@@ -19,6 +19,20 @@ DetectionWorker::DetectionWorker(SharedLatest &shared,
     ttl_               = 0.0f;
     initial_yaw_       = 0.0f;
     last_cam_ver_      = 0;
+
+    // Camera intrinsics
+    camera_matrix = (cv::Mat_<double>(3, 3) <<
+        2431.4,    0.0,       629.6101,
+        0.0,       2430.4,    584.5141,
+        0.0,       0.0,       1.0
+    );
+    dist_coeffs = (cv::Mat_<double>(1, 5) <<
+        -0.0041,
+        -0.6401,
+        -0.0035,
+         0.0043,
+        11.6468
+    );
 }
 
 void DetectionWorker::operator()() {
@@ -97,10 +111,139 @@ void DetectionWorker::refine_keypoints(std::vector<DetectionResult> &dets, int w
     // trad CV refine
 }
 
+static std::array<cv::Point2f, 4>
+order_quad_clockwise(const std::vector<cv::Point2f> &pts)
+{
+    if (pts.size() != 4) {
+        return { cv::Point2f(), cv::Point2f(), cv::Point2f(), cv::Point2f() };
+    }
+
+    std::array<cv::Point2f, 4> out;
+    std::vector<float> sum(4), diff(4);
+
+    for (int i = 0; i < 4; ++i) {
+        sum[i]  = pts[i].x + pts[i].y;
+        diff[i] = pts[i].x - pts[i].y;
+    }
+
+    int tl = std::min_element(sum.begin(), sum.end()) - sum.begin();
+    int br = std::max_element(sum.begin(), sum.end()) - sum.begin();
+    int bl = std::min_element(diff.begin(), diff.end()) - diff.begin();
+    int tr = std::max_element(diff.begin(), diff.end()) - diff.begin();
+
+    out[0] = pts[tl];  // TL
+    out[1] = pts[tr];  // TR
+    out[2] = pts[br];  // BR
+    out[3] = pts[bl];  // BL
+    return out;
+}
+
+static void get_object_points(int armor_type, std::vector<cv::Point3f> &obj_pts)
+{
+    obj_pts.clear();
+
+    float half_w, half_h;
+
+    if (armor_type == 1) {  
+        // big armor
+        half_w = 0.1125f;   // replace with your model
+        half_h = 0.0275f;
+    } else {
+        // small armor
+        half_w = 0.0675f;
+        half_h = 0.0275f;
+    }
+
+    obj_pts.emplace_back(-half_w,  half_h, 0.0f);  // TL
+    obj_pts.emplace_back( half_w,  half_h, 0.0f);  // TR
+    obj_pts.emplace_back( half_w, -half_h, 0.0f);  // BR
+    obj_pts.emplace_back(-half_w, -half_h, 0.0f);  // BL
+}
+
+static float wrap_deg(float a)
+{
+    // wrap angle to (-180, 180]
+    while (a <= -180.0f) a += 360.0f;
+    while (a >   180.0f) a -= 360.0f;
+    return a;
+}
+
+static float angle_diff_deg(float a, float b)
+{
+    // smallest signed difference a - b in (-180, 180]
+    return wrap_deg(a - b);
+}
+
 void DetectionWorker::solvepnp_and_yaw(std::vector<DetectionResult> &dets) {
     // solvePnP, Rodrigues, decompose, yaw_rad
+    for (auto &det : dets)
+    {
+        if (det.keypoints.size() != 4) {
+            det.yaw_rad = 0.0f;
+            continue;
+        }
+        // 1. Order the image points
+        auto img_pts_arr = order_quad_clockwise(det.keypoints);
+        std::vector<cv::Point2f> img_pts(img_pts_arr.begin(), img_pts_arr.end());
 
-    //need to convert cv::Vec3f to Eigen::Vector3f here
+        // 2. Get object points
+        std::vector<cv::Point3f> obj_pts;
+        get_object_points(det.armor_type, obj_pts);
+        if (obj_pts.size() != 4)
+            continue;
+
+        // 3. SolvePnP
+        cv::Mat rvec, tvec;
+        bool pnp_success = cv::solvePnP(
+            obj_pts, img_pts,
+            camera_matrix, dist_coeffs,
+            rvec, tvec,
+            false,
+            cv::SOLVEPNP_IPPE);
+        if (!pnp_success)
+            continue;
+        
+        // 4. Save results
+        det.rvec[0] = static_cast<float>(rvec.at<double>(0));
+        det.rvec[1] = static_cast<float>(rvec.at<double>(1));
+        det.rvec[2] = static_cast<float>(rvec.at<double>(2));
+        det.tvec = Eigen::Vector3f(
+            static_cast<float>(tvec.at<double>(0)),
+            static_cast<float>(tvec.at<double>(1)),
+            static_cast<float>(tvec.at<double>(2))
+        );
+
+        // 6. Rodrigues to rotation matrix
+        cv::Mat R;
+        cv::Rodrigues(rvec, R);
+
+        // 7. Euler angles from RQDecomp3x3
+        cv::Mat K, R, Qx, Qy, Qz;
+        cv::Vec3d euler_angles;
+        cv::RQDecomp3x3(R, K_ignore, R_ignore, Qx, Qy, Qz, euler_angles);
+
+        // 8. Yaw angle with optimisation
+        float yaw_deg = static_cast<float>(euler_angles)[1];  // Yaw
+        yaw_deg = wrap_deg(yaw_deg);
+
+        if (yaw_deg > 180.0f || yaw_deg < -180.0f) {
+            continue;
+        }
+        int key = det.class_id;
+        float smoothed_yaw_deg;
+        auto it = yaw_smooth_state.find(key);
+        if (it != yaw_smooth_state.end()) {
+            float prev_yaw_deg = it->second;
+            float delta_yaw = angle_diff_deg(yaw_deg, prev_yaw_deg);
+            smoothed_yaw_deg = prev_yaw_deg + yaw_alpha * delta_yaw;
+            smoothed_yaw_deg = wrap_deg(smoothed_yaw_deg);
+            
+        } else {
+            smoothed_yaw_deg = yaw_deg;
+        }
+        yaw_smooth_state[key] = smoothed_yaw_deg * M_PI / 180.0f;
+        det.yaw_rad = static_cast<float>(yaw_deg * M_PI / 180.0);
+    }
 
 }
 
