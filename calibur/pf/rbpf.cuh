@@ -2,8 +2,8 @@
 #pragma once
 
 #include <curand_kernel.h>
-#include "worker/workers.hpp"
-#include "worker/types.hpp"
+#include "workers.hpp"
+#include "types.hpp"
 
 constexpr int CUDA_BLOCK_SIZE = 256;
 
@@ -116,7 +116,7 @@ struct RBPFPosYawModelGPU {
     void kf_update_device(float dt,
                           bool have_yaw_obs, float y_obs, float R_obs_yawr,
                           bool have_geom_obs, float g0, float g1, float g2);
-    void mean_device();   // fills d_mean[D]
+    void mean_device();
 };
 
 // ======================= C API WRAPPERS ==================
@@ -128,3 +128,15 @@ void rbpf_reset_from_meas(RBPFPosYawModelGPU *pf, const RobotState &meas);
 void rbpf_predict(RBPFPosYawModelGPU *pf, float dt);
 void rbpf_step(RBPFPosYawModelGPU *pf, const RobotState &meas, float dt);
 RobotState rbpf_get_mean(RBPFPosYawModelGPU *pf);
+void gpu_update_and_normalize_weights(
+        const float *d_loglik,
+        float *d_W,
+        int N,
+        cudaStream_t stream);
+void gpu_set_uniform_weights(float *d_W, int N, cudaStream_t stream);
+void gpu_resample_particles(
+        RBPFDevice dev,
+        float *d_W,
+        float *d_cdf,
+        int N,
+        cudaStream_t stream);

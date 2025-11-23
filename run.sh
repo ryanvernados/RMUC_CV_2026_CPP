@@ -50,8 +50,8 @@ mkdir -p "${BUILD_DIR}"
 
 # Configure
 cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCUDAToolkit_ROOT=/usr/local/cuda \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCUDAToolkit_ROOT=/usr/local/cuda-12.9 \
     -DCALIBUR_PLATFORM="${CALIBUR_PLATFORM}" \
     ${CALIBUR_L4T:+-DCALIBUR_L4T="${CALIBUR_L4T}"}
 

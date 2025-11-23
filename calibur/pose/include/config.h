@@ -17,9 +17,7 @@ const float kConfThresh = 0.25f;
 const int kMaxNumOutputBbox = 1000;  // assume the box outputs no more than kMaxNumOutputBbox boxes that conf >= kNmsThresh;
 const int kNumBoxElement = 7 + kNumKpt * kKptDims;  // left, top, right, bottom, confidence, class, keepflag(whether drop when NMS), 51 keypoints
 
-const std::string onnxFile = "./best.onnx";
-// const std::string trtFile = "./yolo11s.plan";
-// const std::string testDataDir = "../images";  // 用于推理
+const std::string onnxFile = "./calibur/models/yolo11-pose3.onnx";
 
 // for FP16 mode
 const bool bFP16Mode = false;

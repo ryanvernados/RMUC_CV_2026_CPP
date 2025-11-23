@@ -6,14 +6,17 @@
 #include <unordered_map>
 
 #include "types.hpp"
-#include "pf/rbpf.cuh"
+#include "rbpf.cuh"
 #include "infer.h"
 
 
 // ------------------------------------------- Constants -------------------------------------------
-// ------------- Model Path ------------------------
-const std::string YOLO_MODEL_PATH = "calibur/models/yolo11-pose3.onnx";
+// ------------- File Paths ------------------------
+const std::string YOLO_MODEL_PATH   = "calibur/models/yolo11-pose3.onnx";
+const std::string VIDEO_PATH        = "sample_videos/video1.mp4";
 
+// ------------- Camera Worker ---------------------
+#define USE_VIDEO_FILE
 
 // ------------- Detection Constants ---------------
 #define YOLO_CONFIDENCE_THRESHOLD               0.5f
@@ -41,19 +44,25 @@ static constexpr int NUM_PARTICLES = 10000;
 class CameraWorker {
 public:
     CameraWorker(void* cam_handle,
-                 SharedLatest &shared,
-                 std::atomic<bool> &stop_flag);
+                 SharedLatest& shared,
+                 std::atomic<bool>& stop_flag);
 
-    // Long-running loop for thread pool
-    void operator()();
+    void operator()();  // For thread pool execution
 
 private:
-    void*           cam_;
-    SharedLatest   &shared_;
-    std::atomic<bool> &stop_;
+    void* cam_;
+    SharedLatest& shared_;
+    std::atomic<bool>& stop_;
 
-    // You can replace this with a real SDK call in the .cpp
-    void grab_frame_stub(CameraFrame &frame);
+#ifdef USE_VIDEO_FILE
+    cv::VideoCapture cap_;
+    bool use_stub_ = false;
+#endif
+
+    void grab_frame_stub(CameraFrame& frame);
+#ifdef USE_VIDEO_FILE
+    void grab_frame_from_video(CameraFrame& frame);
+#endif
 };
 
 //--------------------------------------------IMU Worker--------------------------------------------
@@ -80,13 +89,19 @@ public:
                std::atomic<bool>& stop_flag,
                const std::string& engine_path);
 
+    ~YoloWorker() = default;
+
     void operator()();
+
+    YoloWorker(const YoloWorker&) = delete;
+    YoloWorker& operator=(const YoloWorker&) = delete;
+    YoloWorker(YoloWorker&&) = default;
+    YoloWorker& operator=(YoloWorker&&) = default;
 
 private:
     SharedLatest&       shared_;
     std::atomic<bool>&  stop_;
     uint64_t            last_cam_ver_ = 0;
-
     YoloDetector        detector_;      // <-- persistent member
 };
 
@@ -148,7 +163,7 @@ private:
 
 
 //--------------------------------------------PF Worker--------------------------------------------
-
+struct RBPFPosYawModelGPU; 
 class PFWorker {
 public:
     PFWorker(SharedLatest &shared,

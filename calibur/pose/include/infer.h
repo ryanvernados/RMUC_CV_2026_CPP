@@ -18,6 +18,10 @@ class YoloDetector
 public:
     explicit YoloDetector(const std::string trtFile);
     ~YoloDetector();
+    YoloDetector(const YoloDetector&) = delete;
+    YoloDetector& operator=(const YoloDetector&) = delete;
+    YoloDetector(YoloDetector&&) = default;
+    YoloDetector& operator=(YoloDetector&&) = default;
 
     std::vector<Detection> inference(cv::Mat& img);
 
@@ -39,7 +43,7 @@ private:
     IRuntime*           runtime  = nullptr;
     IExecutionContext*  context  = nullptr;
 
-    cudaStream_t        stream{};
+    cudaStream_t        stream   = nullptr;
 
     float*              outputData     = nullptr;
     std::vector<void*>  vBufferD;          // [input, output]

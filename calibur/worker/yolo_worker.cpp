@@ -12,7 +12,7 @@ YoloWorker::YoloWorker(SharedLatest& shared,
                        const std::string& engine_path)
     : shared_(shared),
       stop_(stop_flag),
-      detector_(engine_path)          // <-- construct member here
+      detector_("calibur/models/yolo11-pose3.engine")          // <-- construct member here
 {}
 
 void YoloWorker::operator()() {

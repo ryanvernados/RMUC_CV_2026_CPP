@@ -1,28 +1,30 @@
-cmake_minimum_required(VERSION 3.5)
-project(calibur LANGUAGES CXX)
+# ROOT CMakeLists.txt
 
+cmake_minimum_required(VERSION 3.10) 
+# Explicitly set the compiler path as a fallback
+set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc" CACHE FILEPATH "Path to nvcc compiler")
 
+project(calibur LANGUAGES CXX CUDA)
 
-# Make CUDAToolkit_ROOT actually used, and avoid CUDA_ARCH warnings
+# --- Policies (Set all policies early and correctly) ---
 if (POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
 endif()
 if (POLICY CMP0104)
     cmake_policy(SET CMP0104 NEW)
 endif()
+if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+endif() # Important for modern target commands
+
+# --- CUDA Setup ---
+find_package(CUDAToolkit REQUIRED) 
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+# ============================================== CHange this to -O3 when deploying! =======================
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -O3 -g -Wall")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-
-#=================================== change cuda dir to the desired dir ==============================================
-# set(CUDAToolkit_ROOT "/usr/local/cuda" CACHE PATH "CUDA Toolkit root")
-# find_package(CUDAToolkit REQUIRED)
-find_package(CUDAToolkit REQUIRED)
-include_directories(/usr/local/cuda/include)
-link_directories(/usr/local/cuda/lib64)
 
 # =========================================================
 #  Platform detection: x86_64 Linux vs Jetson (aarch64)
@@ -62,20 +64,16 @@ if (CALIBUR_PLATFORM STREQUAL "jetson")
     message(STATUS "CALIBUR_L4T = ${CALIBUR_L4T}")
 
     if (CALIBUR_L4T STREQUAL "36")
-        # JetPack 6.2 (L4T 36.x)
         target_compile_definitions(calibur_platform INTERFACE CALIBUR_L4T36=1)
-        # Typical system include/lib paths
         target_include_directories(calibur_platform INTERFACE
             /usr/include/aarch64-linux-gnu
         )
         target_link_directories(calibur_platform INTERFACE
             /usr/lib/aarch64-linux-gnu
         )
-        # CUDA archs for AGX Orin / Orin NX etc (tune if needed)
-        set(CMAKE_CUDA_ARCHITECTURES 87 CACHE STRING "" FORCE)
-
+        set(CMAKE_CUDA_ARCHITECTURES 87 CACHE STRING "Target CUDA architecture" FORCE) 
+        
     elseif (CALIBUR_L4T STREQUAL "38")
-        # JetPack 7.x (L4T 38.x)
         target_compile_definitions(calibur_platform INTERFACE CALIBUR_L4T38=1)
         target_include_directories(calibur_platform INTERFACE
             /usr/include/aarch64-linux-gnu
@@ -83,8 +81,7 @@ if (CALIBUR_PLATFORM STREQUAL "jetson")
         target_link_directories(calibur_platform INTERFACE
             /usr/lib/aarch64-linux-gnu
         )
-        # For Thor / newer, adjust if you know exact SM
-        set(CMAKE_CUDA_ARCHITECTURES 87 CACHE STRING "" FORCE)  # or 90 etc
+        set(CMAKE_CUDA_ARCHITECTURES 87 CACHE STRING "Target CUDA architecture" FORCE) 
 
     else()
         message(WARNING "Unknown L4T version; set CALIBUR_L4T to 36 or 38 explicitly.")
@@ -99,47 +96,54 @@ elseif (CALIBUR_PLATFORM STREQUAL "x86")
     target_link_directories(calibur_platform INTERFACE
         /usr/lib/x86_64-linux-gnu
     )
+    set(CMAKE_CUDA_ARCHITECTURES 75 86 CACHE STRING "Target CUDA architecture" FORCE)
+    
 else()
     message(FATAL_ERROR "Unsupported CALIBUR_PLATFORM='${CALIBUR_PLATFORM}'")
 endif()
 
-
 # ----------------- Dependencies -----------------
 
-find_package(OpenCV REQUIRED core imgproc imgcodecs highgui calib3d)
+# Use the full component list to ensure all OpenCV targets are found, but rely on legacy linking
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs highgui calib3d)
 find_package(Eigen3 REQUIRED)
 
 list(APPEND CMAKE_PREFIX_PATH
      "${CMAKE_SOURCE_DIR}/apps/yaml-cpp/lib/cmake")
 find_package(yaml-cpp REQUIRED)
 
+# Manually add OpenCV include directory for NVCC/C++ compilation
+# This must be done because we're not using the imported targets.
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 # Optionally expose common deps via another interface target
 add_library(calibur_deps INTERFACE)
+
+# --- FIX: Revert to legacy OpenCV linking, keep modern for others ---
 target_link_libraries(calibur_deps INTERFACE
     calibur_platform
     yaml-cpp::yaml-cpp
     Eigen3::Eigen
+    # Use legacy variables for linking OpenCV libraries
     ${OpenCV_LIBS}
     CUDA::cudart 
 )
-
-# Any target in subdirs can now:  target_link_libraries(my_target PRIVATE calibur_deps)
+# -----------------------------------------------------------------
 
 # ----------------- Subdirectories -----------------
 add_subdirectory(calibur/pf)
 add_subdirectory(calibur/pose)
 add_subdirectory(calibur/worker)
-# add_subdirectory(tests)
 
+# ----------------- Executable -----------------
 add_executable(calibur_worker
-    main.cpp      # or wherever you put your main()
+    main.cpp
 )
 
 target_link_libraries(calibur_worker
     PRIVATE
         calibur_worker_core
+        calibur_pf
+        yolo_infer
         calibur_deps
 )
-
-
-

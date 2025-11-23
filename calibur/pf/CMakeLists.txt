@@ -1,27 +1,26 @@
-cmake_minimum_required(VERSION 3.5)
-project(calibur_pf LANGUAGES CXX)
+# calibur/pf/CMakeLists.txt (Updated)
 
-add_library(calibur_pf STATIC
+# Define the list of sources for this library
+set(PF_SOURCES
     rbpf.cu
     rbpf.cuh
 )
 
-# Enable CUDA
-set_target_properties(calibur_pf PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
-    LINKER_LANGUAGE CXX
-)
+# Create the static library target
+add_library(calibur_pf STATIC ${PF_SOURCES})
 
+set_property(SOURCE rbpf.cu PROPERTY COMPILE_FLAGS "--expt-relaxed-constexpr")
 
+# --- FIX: Manually add worker and pose includes needed by rbpf.cu's headers ---
 target_include_directories(calibur_pf
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/calibur   # for shared headers, if any
+        . # for rbpf.cuh
+        ${PROJECT_SOURCE_DIR}/calibur/worker     # Need workers.hpp and types.hpp
+        ${PROJECT_SOURCE_DIR}/calibur/pose/include # Need infer.h
 )
 
+# Link common dependencies (including CUDA and OpenCV includes propagated from root)
 target_link_libraries(calibur_pf
     PUBLIC
-        CUDA::cudart
-        Eigen3::Eigen
+        calibur_deps
 )

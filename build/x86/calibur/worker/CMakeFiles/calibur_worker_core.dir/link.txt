@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcalibur_worker_core.a CMakeFiles/calibur_worker_core.dir/camera_worker.cpp.o CMakeFiles/calibur_worker_core.dir/detection_worker.cpp.o CMakeFiles/calibur_worker_core.dir/imu_worker.cpp.o CMakeFiles/calibur_worker_core.dir/pf_worker.cpp.o CMakeFiles/calibur_worker_core.dir/prediction_worker.cpp.o CMakeFiles/calibur_worker_core.dir/usb_worker.cpp.o CMakeFiles/calibur_worker_core.dir/yolo_worker.cpp.o
+/usr/bin/ranlib libcalibur_worker_core.a

@@ -1,0 +1,1 @@
+-I/home/hudou/Desktop/CV/RMUC_CV_2026_CPP/calibur/pf/. -I/home/hudou/Desktop/CV/RMUC_CV_2026_CPP/calibur/worker -I/home/hudou/Desktop/CV/RMUC_CV_2026_CPP/calibur/pose/include -isystem /usr/include/opencv4 -isystem "/home/hudou/Desktop/CV/RMUC_CV_2026_CPP/apps/yaml-cpp/include" -isystem /usr/include/eigen3 -isystem "/usr/local/cuda/targets/x86_64-linux/include"

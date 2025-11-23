@@ -445,6 +445,7 @@ RBPFPosYawModelGPU::~RBPFPosYawModelGPU() {
     cudaStreamDestroy(stream);
 }
 
+
 void RBPFPosYawModelGPU::set_state_from_host(const float *h_X) {
     cudaMemcpyAsync(dev.X, h_X, N * D * sizeof(float),
                     cudaMemcpyHostToDevice, stream);
@@ -486,6 +487,7 @@ void RBPFPosYawModelGPU::mean_device() {
 
 // ======================= C API WRAPPERS ====================
 
+
 // Map RobotState -> obs[15]
 static inline void robotStateToObs(const RobotState &meas, float *z) {
     // fill z[0..14] from meas.tvec, meas.vel, meas.acc, meas.yaw, omega, alpha, r1,r2,h
@@ -517,8 +519,8 @@ void rbpf_step(RBPFPosYawModelGPU *pf, const RobotState &meas, float dt) {
     cudaMemcpyAsync(pf->d_obs, h_obs, D*sizeof(float),
                     cudaMemcpyHostToDevice, pf->stream);
 
-    int block = CUDA_BLOCK_SIZE;
-    int grid  = (pf->N + block - 1) / block;
+    //int block = CUDA_BLOCK_SIZE;
+    //int grid  = (pf->N + block - 1) / block;
 
     // 2) predict
     pf->predict_device(dt);
