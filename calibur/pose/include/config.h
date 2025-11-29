@@ -17,7 +17,7 @@ const float kConfThresh = 0.25f;
 const int kMaxNumOutputBbox = 1000;  // assume the box outputs no more than kMaxNumOutputBbox boxes that conf >= kNmsThresh;
 const int kNumBoxElement = 7 + kNumKpt * kKptDims;  // left, top, right, bottom, confidence, class, keepflag(whether drop when NMS), 51 keypoints
 
-const std::string kOnnxPath = "../calibur/models/best.onnx";
+const std::string kOnnxPath = "./calibur/models/best.onnx";
 
 // for FP16 mode
 const bool bFP16Mode = true;

@@ -114,7 +114,17 @@ find_package(yaml-cpp REQUIRED)
 
 # Manually add OpenCV include directory for NVCC/C++ compilation
 # This must be done because we're not using the imported targets.
-include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(
+    ${OpenCV_INCLUDE_DIRS}
+    /opt/MVS/include    
+    ${CMAKE_SOURCE_DIR}/calibur/camera
+)
+
+link_directories(
+    /opt/MVS/lib/aarch64
+    /usr/lib/aarch64-linux-gnu
+)
+
 
 # Optionally expose common deps via another interface target
 add_library(calibur_deps INTERFACE)
@@ -131,6 +141,7 @@ target_link_libraries(calibur_deps INTERFACE
 # -----------------------------------------------------------------
 
 # ----------------- Subdirectories -----------------
+add_subdirectory(calibur/camera)
 add_subdirectory(calibur/pf)
 add_subdirectory(calibur/pose)
 add_subdirectory(calibur/worker)
@@ -142,6 +153,7 @@ add_executable(calibur_worker
 
 target_link_libraries(calibur_worker
     PRIVATE
+        MvCameraControl
         calibur_worker_core
         calibur_pf
         yolo_infer

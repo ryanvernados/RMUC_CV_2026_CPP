@@ -12,12 +12,13 @@
 
 // ------------------------------------------- Constants -------------------------------------------
 // ------------- File Paths ------------------------
-const std::string YOLO_MODEL_PATH   = "../calibur/models/best.engine";  //relative to the binary executable
-const std::string VIDEO_PATH        = "../sample_videos/video1.mp4";
+const std::string YOLO_MODEL_PATH   = "./calibur/models/best.engine";  //relative to the binary executable
+const std::string VIDEO_PATH        = "./sample_videos/video1.mp4";
+
 // const std::string kOnnxPath         = "../calibur/models/best.onnx";
 
 // ------------- Camera Worker ---------------------
-#define USE_VIDEO_FILE
+// #define USE_VIDEO_FILE
 #define DISPLAY_DETECTION
 #define PERFORMANCE_BENCHMARK
 
@@ -45,28 +46,34 @@ static constexpr int NUM_PARTICLES = 10000;
 
 //--------------------------------------------Camera Worker--------------------------------------------
 
+enum class CameraMode {
+    HIK_USB,
+    VIDEO_FILE
+};
+
+
 class CameraWorker {
 public:
     CameraWorker(void* cam_handle,
                  SharedLatest& shared,
-                 std::atomic<bool>& stop_flag);
+                 std::atomic<bool>& stop_flag,
+                 CameraMode mode);
 
     void operator()();  // For thread pool execution
 
 private:
-    void* cam_;
+    void* cam_;                // Hikvision handle
     SharedLatest& shared_;
     std::atomic<bool>& stop_;
+    CameraMode mode_;
 
-#ifdef USE_VIDEO_FILE
+    // Only used for VIDEO_FILE mode
     cv::VideoCapture cap_;
     bool use_stub_ = false;
-#endif
 
     void grab_frame_stub(CameraFrame& frame);
-#ifdef USE_VIDEO_FILE
+    void grab_frame_from_hik(CameraFrame& frame);
     void grab_frame_from_video(CameraFrame& frame);
-#endif
 };
 
 //--------------------------------------------IMU Worker--------------------------------------------

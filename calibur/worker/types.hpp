@@ -105,7 +105,7 @@ struct SharedLatest {
     std::atomic<uint64_t> detection_ver  {0};
     std::atomic<uint64_t> pf_ver         {0};
     std::atomic<uint64_t> prediction_ver {0};
-    std::atomic<uint64_t> yolo_ver{0};
+    std::atomic<uint64_t> yolo_ver       {0};
 };
 
 struct SharedScalars {

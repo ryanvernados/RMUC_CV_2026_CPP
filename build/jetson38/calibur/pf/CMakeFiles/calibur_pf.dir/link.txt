@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcalibur_pf.a CMakeFiles/calibur_pf.dir/rbpf.cu.o
+/usr/bin/ranlib libcalibur_pf.a
