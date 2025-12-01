@@ -188,6 +188,7 @@ CMakeFiles/calibur_worker.dir/main.cpp.o: \
  /usr/include/c++/13/backward/auto_ptr.h \
  /usr/include/c++/13/pstl/glue_memory_defs.h \
  /usr/include/c++/13/pstl/execution_defs.h \
+ /workspace/aimbot_cpp/RMUC_CV_2026_C-/./calibur/worker/../imu/imu_data.hpp \
  /usr/include/opencv4/opencv2/core.hpp \
  /usr/include/opencv4/opencv2/core/cvdef.h \
  /usr/include/opencv4/opencv2/core/version.hpp \
@@ -511,6 +512,7 @@ CMakeFiles/calibur_worker.dir/main.cpp.o: \
  /usr/include/c++/13/condition_variable /usr/include/c++/13/future \
  /usr/include/c++/13/bits/atomic_futex.h \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/./calibur/worker/workers.hpp \
+ /workspace/aimbot_cpp/RMUC_CV_2026_C-/./calibur/worker/../imu/imu_reader.hpp \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/pf/./rbpf.cuh \
  /usr/local/cuda/targets/sbsa-linux/include/curand_kernel.h \
  /usr/local/cuda/targets/sbsa-linux/include/nv/target \

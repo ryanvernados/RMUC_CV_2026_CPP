@@ -410,6 +410,8 @@ calibur/worker/CMakeFiles/calibur_worker_core.dir/yolo_worker.cpp.o: \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/pose/include/config.h \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/workers.hpp \
  /usr/include/c++/13/atomic \
+ /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/../imu/imu_reader.hpp \
+ /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/../imu/imu_data.hpp \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/types.hpp \
  /usr/include/eigen3/Eigen/Dense /usr/include/eigen3/Eigen/Core \
  /usr/include/eigen3/Eigen/src/Core/util/DisableStupidWarnings.h \

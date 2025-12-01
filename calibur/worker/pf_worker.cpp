@@ -74,10 +74,10 @@ void PFWorker::operator()() {
         }
         pf_state = gpu_return_result();
         
-        std::cout << "PF out: ";
-        for (int i = 0; i < 15; i++){
-            std::cout << pf_state.state[i] << ", " << std::endl;
-        }
+        // std::cout << "PF out: ";
+        // for (int i = 0; i < 15; i++){
+        //     std::cout << pf_state.state[i] << ", " << std::endl;
+        // }
 
 #ifdef PERFORMANCE_BENCHMARK
         //auto t1 = std::chrono::high_resolution_clock::now();

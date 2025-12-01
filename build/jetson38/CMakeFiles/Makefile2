@@ -65,6 +65,7 @@ CMAKE_BINARY_DIR = /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38
 # The main recursive "all" target.
 all: CMakeFiles/calibur_worker.dir/all
 all: calibur/camera/all
+all: calibur/imu/all
 all: calibur/pf/all
 all: calibur/pose/all
 all: calibur/worker/all
@@ -73,6 +74,7 @@ all: calibur/worker/all
 # The main recursive "codegen" target.
 codegen: CMakeFiles/calibur_worker.dir/codegen
 codegen: calibur/camera/codegen
+codegen: calibur/imu/codegen
 codegen: calibur/pf/codegen
 codegen: calibur/pose/codegen
 codegen: calibur/worker/codegen
@@ -80,6 +82,7 @@ codegen: calibur/worker/codegen
 
 # The main recursive "preinstall" target.
 preinstall: calibur/camera/preinstall
+preinstall: calibur/imu/preinstall
 preinstall: calibur/pf/preinstall
 preinstall: calibur/pose/preinstall
 preinstall: calibur/worker/preinstall
@@ -88,6 +91,7 @@ preinstall: calibur/worker/preinstall
 # The main recursive "clean" target.
 clean: CMakeFiles/calibur_worker.dir/clean
 clean: calibur/camera/clean
+clean: calibur/imu/clean
 clean: calibur/pf/clean
 clean: calibur/pose/clean
 clean: calibur/worker/clean
@@ -97,11 +101,11 @@ clean: calibur/worker/clean
 # Directory level rules for directory calibur/camera
 
 # Recursive "all" directory target.
-calibur/camera/all: calibur/camera/CMakeFiles/calibur_camera_test.dir/all
+calibur/camera/all: calibur/camera/CMakeFiles/test_camera.dir/all
 .PHONY : calibur/camera/all
 
 # Recursive "codegen" directory target.
-calibur/camera/codegen: calibur/camera/CMakeFiles/calibur_camera_test.dir/codegen
+calibur/camera/codegen: calibur/camera/CMakeFiles/test_camera.dir/codegen
 .PHONY : calibur/camera/codegen
 
 # Recursive "preinstall" directory target.
@@ -109,8 +113,27 @@ calibur/camera/preinstall:
 .PHONY : calibur/camera/preinstall
 
 # Recursive "clean" directory target.
-calibur/camera/clean: calibur/camera/CMakeFiles/calibur_camera_test.dir/clean
+calibur/camera/clean: calibur/camera/CMakeFiles/test_camera.dir/clean
 .PHONY : calibur/camera/clean
+
+#=============================================================================
+# Directory level rules for directory calibur/imu
+
+# Recursive "all" directory target.
+calibur/imu/all: calibur/imu/CMakeFiles/calibur_imu.dir/all
+.PHONY : calibur/imu/all
+
+# Recursive "codegen" directory target.
+calibur/imu/codegen: calibur/imu/CMakeFiles/calibur_imu.dir/codegen
+.PHONY : calibur/imu/codegen
+
+# Recursive "preinstall" directory target.
+calibur/imu/preinstall:
+.PHONY : calibur/imu/preinstall
+
+# Recursive "clean" directory target.
+calibur/imu/clean: calibur/imu/CMakeFiles/calibur_imu.dir/clean
+.PHONY : calibur/imu/clean
 
 #=============================================================================
 # Directory level rules for directory calibur/pf
@@ -173,6 +196,7 @@ calibur/worker/clean: calibur/worker/CMakeFiles/calibur_worker_core.dir/clean
 # Target rules for target CMakeFiles/calibur_worker.dir
 
 # All Build rule for target.
+CMakeFiles/calibur_worker.dir/all: calibur/imu/CMakeFiles/calibur_imu.dir/all
 CMakeFiles/calibur_worker.dir/all: calibur/pf/CMakeFiles/calibur_pf.dir/all
 CMakeFiles/calibur_worker.dir/all: calibur/pose/CMakeFiles/yolo_infer.dir/all
 CMakeFiles/calibur_worker.dir/all: calibur/worker/CMakeFiles/calibur_worker_core.dir/all
@@ -183,7 +207,7 @@ CMakeFiles/calibur_worker.dir/all: calibur/worker/CMakeFiles/calibur_worker_core
 
 # Build rule for subdir invocation for target.
 CMakeFiles/calibur_worker.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 17
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 19
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/calibur_worker.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 0
 .PHONY : CMakeFiles/calibur_worker.dir/rule
@@ -204,36 +228,68 @@ CMakeFiles/calibur_worker.dir/clean:
 .PHONY : CMakeFiles/calibur_worker.dir/clean
 
 #=============================================================================
-# Target rules for target calibur/camera/CMakeFiles/calibur_camera_test.dir
+# Target rules for target calibur/camera/CMakeFiles/test_camera.dir
 
 # All Build rule for target.
-calibur/camera/CMakeFiles/calibur_camera_test.dir/all:
-	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/depend
-	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=1,2 "Built target calibur_camera_test"
-.PHONY : calibur/camera/CMakeFiles/calibur_camera_test.dir/all
+calibur/camera/CMakeFiles/test_camera.dir/all:
+	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/depend
+	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=15,16 "Built target test_camera"
+.PHONY : calibur/camera/CMakeFiles/test_camera.dir/all
 
 # Build rule for subdir invocation for target.
-calibur/camera/CMakeFiles/calibur_camera_test.dir/rule: cmake_check_build_system
+calibur/camera/CMakeFiles/test_camera.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur/camera/CMakeFiles/calibur_camera_test.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur/camera/CMakeFiles/test_camera.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 0
-.PHONY : calibur/camera/CMakeFiles/calibur_camera_test.dir/rule
+.PHONY : calibur/camera/CMakeFiles/test_camera.dir/rule
 
 # Convenience name for target.
-calibur_camera_test: calibur/camera/CMakeFiles/calibur_camera_test.dir/rule
-.PHONY : calibur_camera_test
+test_camera: calibur/camera/CMakeFiles/test_camera.dir/rule
+.PHONY : test_camera
 
 # codegen rule for target.
-calibur/camera/CMakeFiles/calibur_camera_test.dir/codegen:
-	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=1,2 "Finished codegen for target calibur_camera_test"
-.PHONY : calibur/camera/CMakeFiles/calibur_camera_test.dir/codegen
+calibur/camera/CMakeFiles/test_camera.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=15,16 "Finished codegen for target test_camera"
+.PHONY : calibur/camera/CMakeFiles/test_camera.dir/codegen
 
 # clean rule for target.
-calibur/camera/CMakeFiles/calibur_camera_test.dir/clean:
-	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/clean
-.PHONY : calibur/camera/CMakeFiles/calibur_camera_test.dir/clean
+calibur/camera/CMakeFiles/test_camera.dir/clean:
+	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/clean
+.PHONY : calibur/camera/CMakeFiles/test_camera.dir/clean
+
+#=============================================================================
+# Target rules for target calibur/imu/CMakeFiles/calibur_imu.dir
+
+# All Build rule for target.
+calibur/imu/CMakeFiles/calibur_imu.dir/all:
+	$(MAKE) $(MAKESILENT) -f calibur/imu/CMakeFiles/calibur_imu.dir/build.make calibur/imu/CMakeFiles/calibur_imu.dir/depend
+	$(MAKE) $(MAKESILENT) -f calibur/imu/CMakeFiles/calibur_imu.dir/build.make calibur/imu/CMakeFiles/calibur_imu.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=1,2 "Built target calibur_imu"
+.PHONY : calibur/imu/CMakeFiles/calibur_imu.dir/all
+
+# Build rule for subdir invocation for target.
+calibur/imu/CMakeFiles/calibur_imu.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur/imu/CMakeFiles/calibur_imu.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles 0
+.PHONY : calibur/imu/CMakeFiles/calibur_imu.dir/rule
+
+# Convenience name for target.
+calibur_imu: calibur/imu/CMakeFiles/calibur_imu.dir/rule
+.PHONY : calibur_imu
+
+# codegen rule for target.
+calibur/imu/CMakeFiles/calibur_imu.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f calibur/imu/CMakeFiles/calibur_imu.dir/build.make calibur/imu/CMakeFiles/calibur_imu.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=1,2 "Finished codegen for target calibur_imu"
+.PHONY : calibur/imu/CMakeFiles/calibur_imu.dir/codegen
+
+# clean rule for target.
+calibur/imu/CMakeFiles/calibur_imu.dir/clean:
+	$(MAKE) $(MAKESILENT) -f calibur/imu/CMakeFiles/calibur_imu.dir/build.make calibur/imu/CMakeFiles/calibur_imu.dir/clean
+.PHONY : calibur/imu/CMakeFiles/calibur_imu.dir/clean
 
 #=============================================================================
 # Target rules for target calibur/pf/CMakeFiles/calibur_pf.dir
@@ -274,7 +330,7 @@ calibur/pf/CMakeFiles/calibur_pf.dir/clean:
 calibur/pose/CMakeFiles/yolo_infer.dir/all:
 	$(MAKE) $(MAKESILENT) -f calibur/pose/CMakeFiles/yolo_infer.dir/build.make calibur/pose/CMakeFiles/yolo_infer.dir/depend
 	$(MAKE) $(MAKESILENT) -f calibur/pose/CMakeFiles/yolo_infer.dir/build.make calibur/pose/CMakeFiles/yolo_infer.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=15,16,17,18,19 "Built target yolo_infer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=17,18,19,20,21 "Built target yolo_infer"
 .PHONY : calibur/pose/CMakeFiles/yolo_infer.dir/all
 
 # Build rule for subdir invocation for target.
@@ -291,7 +347,7 @@ yolo_infer: calibur/pose/CMakeFiles/yolo_infer.dir/rule
 # codegen rule for target.
 calibur/pose/CMakeFiles/yolo_infer.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f calibur/pose/CMakeFiles/yolo_infer.dir/build.make calibur/pose/CMakeFiles/yolo_infer.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=15,16,17,18,19 "Finished codegen for target yolo_infer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/CMakeFiles --progress-num=17,18,19,20,21 "Finished codegen for target yolo_infer"
 .PHONY : calibur/pose/CMakeFiles/yolo_infer.dir/codegen
 
 # clean rule for target.

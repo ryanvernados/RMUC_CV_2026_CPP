@@ -1,4 +1,4 @@
-calibur/camera/CMakeFiles/calibur_camera_test.dir/camera.cpp.o: \
+calibur/camera/CMakeFiles/test_camera.dir/camera.cpp.o: \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera/camera.cpp \
  /usr/include/stdc-predef.h \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera/MvCameraControl.h \

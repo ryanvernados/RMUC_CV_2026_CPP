@@ -97,6 +97,7 @@ calibur_worker_EXTERNAL_OBJECTS =
 /workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: CMakeFiles/calibur_worker.dir/build.make
 /workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: CMakeFiles/calibur_worker.dir/compiler_depend.ts
 /workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: calibur/worker/libcalibur_worker_core.a
+/workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: calibur/imu/libcalibur_imu.a
 /workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: calibur/pf/libcalibur_pf.a
 /workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: calibur/pose/libyolo_infer.so
 /workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_worker: /workspace/aimbot_cpp/RMUC_CV_2026_C-/apps/yaml-cpp/lib/libyaml-cpp.a

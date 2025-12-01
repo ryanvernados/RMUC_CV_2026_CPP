@@ -8,8 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera/camera.cpp" "calibur/camera/CMakeFiles/calibur_camera_test.dir/camera.cpp.o" "gcc" "calibur/camera/CMakeFiles/calibur_camera_test.dir/camera.cpp.o.d"
-  "" "/workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_camera_test" "gcc" "calibur/camera/CMakeFiles/calibur_camera_test.dir/link.d"
+  "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera/camera.cpp" "calibur/camera/CMakeFiles/test_camera.dir/camera.cpp.o" "gcc" "calibur/camera/CMakeFiles/test_camera.dir/camera.cpp.o.d"
+  "" "/workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/test_camera" "gcc" "calibur/camera/CMakeFiles/test_camera.dir/link.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

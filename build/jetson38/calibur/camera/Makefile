@@ -117,25 +117,25 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-calibur/camera/CMakeFiles/calibur_camera_test.dir/rule:
-	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur/camera/CMakeFiles/calibur_camera_test.dir/rule
-.PHONY : calibur/camera/CMakeFiles/calibur_camera_test.dir/rule
+calibur/camera/CMakeFiles/test_camera.dir/rule:
+	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur/camera/CMakeFiles/test_camera.dir/rule
+.PHONY : calibur/camera/CMakeFiles/test_camera.dir/rule
 
 # Convenience name for target.
-calibur_camera_test: calibur/camera/CMakeFiles/calibur_camera_test.dir/rule
-.PHONY : calibur_camera_test
+test_camera: calibur/camera/CMakeFiles/test_camera.dir/rule
+.PHONY : test_camera
 
 # fast build rule for target.
-calibur_camera_test/fast:
-	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/build
-.PHONY : calibur_camera_test/fast
+test_camera/fast:
+	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/build
+.PHONY : test_camera/fast
 
 camera.o: camera.cpp.o
 .PHONY : camera.o
 
 # target to build an object file
 camera.cpp.o:
-	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/camera.cpp.o
+	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/camera.cpp.o
 .PHONY : camera.cpp.o
 
 camera.i: camera.cpp.i
@@ -143,7 +143,7 @@ camera.i: camera.cpp.i
 
 # target to preprocess a source file
 camera.cpp.i:
-	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/camera.cpp.i
+	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/camera.cpp.i
 .PHONY : camera.cpp.i
 
 camera.s: camera.cpp.s
@@ -151,7 +151,7 @@ camera.s: camera.cpp.s
 
 # target to generate assembly for a file
 camera.cpp.s:
-	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/camera.cpp.s
+	cd /workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38 && $(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/camera.cpp.s
 .PHONY : camera.cpp.s
 
 # Help Target
@@ -162,7 +162,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... calibur_camera_test"
+	@echo "... test_camera"
 	@echo "... camera.o"
 	@echo "... camera.i"
 	@echo "... camera.s"

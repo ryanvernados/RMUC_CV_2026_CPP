@@ -7,6 +7,8 @@
 #include <memory>
 #include <atomic>
 
+#include "../imu/imu_data.hpp"
+
 #include <opencv2/core.hpp>
 #include <Eigen/Dense>
 
@@ -97,7 +99,7 @@ struct SharedLatest {
     std::shared_ptr<RobotState>    detection_out;
     std::shared_ptr<RobotState>    pf_out;
     std::shared_ptr<PredictionOut> prediction_out;
-    std::shared_ptr<YoloOutput> yolo;
+    std::shared_ptr<YoloOutput>    yolo;
 
     // Version counters (increment per new publish)
     std::atomic<uint64_t> camera_ver     {0};

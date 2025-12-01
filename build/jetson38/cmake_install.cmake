@@ -45,6 +45,7 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/calibur/camera/cmake_install.cmake")
+  include("/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/calibur/imu/cmake_install.cmake")
   include("/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/calibur/pf/cmake_install.cmake")
   include("/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/calibur/pose/cmake_install.cmake")
   include("/workspace/aimbot_cpp/RMUC_CV_2026_C-/build/jetson38/calibur/worker/cmake_install.cmake")

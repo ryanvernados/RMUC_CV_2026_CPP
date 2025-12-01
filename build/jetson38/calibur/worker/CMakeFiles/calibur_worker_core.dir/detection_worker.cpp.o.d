@@ -279,6 +279,8 @@ calibur/worker/CMakeFiles/calibur_worker_core.dir/detection_worker.cpp.o: \
  /usr/include/opencv4/opencv2/flann/config.h \
  /usr/include/opencv4/opencv2/core/affine.hpp \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/workers.hpp \
+ /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/../imu/imu_reader.hpp \
+ /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/../imu/imu_data.hpp \
  /workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/types.hpp \
  /usr/include/c++/13/chrono /usr/include/eigen3/Eigen/Dense \
  /usr/include/eigen3/Eigen/Core \

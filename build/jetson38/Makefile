@@ -130,17 +130,30 @@ calibur_worker/fast:
 .PHONY : calibur_worker/fast
 
 #=============================================================================
-# Target rules for targets named calibur_camera_test
+# Target rules for targets named test_camera
 
 # Build rule for target.
-calibur_camera_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur_camera_test
-.PHONY : calibur_camera_test
+test_camera: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_camera
+.PHONY : test_camera
 
 # fast build rule for target.
-calibur_camera_test/fast:
-	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/calibur_camera_test.dir/build.make calibur/camera/CMakeFiles/calibur_camera_test.dir/build
-.PHONY : calibur_camera_test/fast
+test_camera/fast:
+	$(MAKE) $(MAKESILENT) -f calibur/camera/CMakeFiles/test_camera.dir/build.make calibur/camera/CMakeFiles/test_camera.dir/build
+.PHONY : test_camera/fast
+
+#=============================================================================
+# Target rules for targets named calibur_imu
+
+# Build rule for target.
+calibur_imu: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 calibur_imu
+.PHONY : calibur_imu
+
+# fast build rule for target.
+calibur_imu/fast:
+	$(MAKE) $(MAKESILENT) -f calibur/imu/CMakeFiles/calibur_imu.dir/build.make calibur/imu/CMakeFiles/calibur_imu.dir/build
+.PHONY : calibur_imu/fast
 
 #=============================================================================
 # Target rules for targets named calibur_pf
@@ -213,10 +226,11 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... calibur_camera_test"
+	@echo "... calibur_imu"
 	@echo "... calibur_pf"
 	@echo "... calibur_worker"
 	@echo "... calibur_worker_core"
+	@echo "... test_camera"
 	@echo "... yolo_infer"
 	@echo "... main.o"
 	@echo "... main.i"

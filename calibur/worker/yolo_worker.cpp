@@ -40,7 +40,7 @@ void YoloWorker::operator()() {
         auto t1 = std::chrono::high_resolution_clock::now();
         double infer_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
-        std::cout << "[YOLO] inference time = " << infer_ms << " ms\n";
+        // std::cout << "[YOLO] inference time = " << infer_ms << " ms\n";
 #else
         std::vector<Detection> yolo_dets = detector_.inference(cam->raw_data);
 #endif

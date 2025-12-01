@@ -1,8 +1,8 @@
-/workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/calibur_camera_test: \
+/workspace/aimbot_cpp/RMUC_CV_2026_C-/bin/test_camera: \
   /usr/lib/gcc/aarch64-linux-gnu/13/../../../aarch64-linux-gnu/Scrt1.o \
   /usr/lib/gcc/aarch64-linux-gnu/13/../../../aarch64-linux-gnu/crti.o \
   /usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o \
-  CMakeFiles/calibur_camera_test.dir/camera.cpp.o \
+  CMakeFiles/test_camera.dir/camera.cpp.o \
   /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.6.0 \
   /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.6.0 \
   /opt/MVS/lib/aarch64/libMvCameraControl.so \
@@ -48,7 +48,7 @@
 
 /usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o:
 
-CMakeFiles/calibur_camera_test.dir/camera.cpp.o:
+CMakeFiles/test_camera.dir/camera.cpp.o:
 
 /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.6.0:
 

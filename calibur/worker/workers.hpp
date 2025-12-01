@@ -5,6 +5,9 @@
 #include <vector>
 #include <unordered_map>
 
+#include "../imu/imu_reader.hpp"
+#include "../imu/imu_data.hpp"
+
 #include "types.hpp"
 #include "rbpf.cuh"
 #include "infer.h"
@@ -80,18 +83,24 @@ private:
 
 class IMUWorker {
 public:
-    IMUWorker(SharedLatest &shared,
-              std::atomic<bool> &stop_flag);
+    IMUWorker(SharedLatest &shared, std::atomic<bool> &stop_flag);
+
+    // forbid copy
+    IMUWorker(const IMUWorker&) = delete;
+    IMUWorker& operator=(const IMUWorker&) = delete;
+
+    // allow move
+    IMUWorker(IMUWorker&&) = default;
+    IMUWorker& operator=(IMUWorker&&) = default;
 
     void operator()();
 
 private:
-    SharedLatest    &shared_;
-    std::atomic<bool> &stop_;
-
-    // Replace with real IMU driver in .cpp
-    bool read_imu_stub(IMUState &imu);
+    SharedLatest &shared_;
+    std::atomic<bool> &stop_flag_;
+    IMUReader reader_;
 };
+
 
 //--------------------------------------------YOLO Worker--------------------------------------------
 class YoloWorker {

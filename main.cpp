@@ -70,8 +70,11 @@ int main() {
 
     CameraMode mode = CameraMode::HIK_USB; 
     pool.submit(CameraWorker(cam_handle, shared, g_stop_flag, mode));
-    // pool.submit(CameraWorker(cam_handle, std::ref(shared), std::ref(g_stop_flag)));
-    //pool.submit(IMUWorker(std::ref(shared), std::ref(g_stop_flag)));
+    // pool.submit(IMUWorker(std::ref(shared), std::ref(g_stop_flag)));
+    pool.submit([&shared, &g_stop_flag]() {
+        IMUWorker worker(shared, g_stop_flag);
+        worker();
+    });
     pool.submit(YoloWorker(std::ref(shared), std::ref(g_stop_flag), YOLO_MODEL_PATH));
     pool.submit(DetectionWorker(std::ref(shared), std::ref(g_stop_flag)));
     pool.submit(PredictionWorker(std::ref(shared), std::ref(scalars), std::ref(g_stop_flag)));

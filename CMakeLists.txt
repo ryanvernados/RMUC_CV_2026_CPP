@@ -142,6 +142,7 @@ target_link_libraries(calibur_deps INTERFACE
 
 # ----------------- Subdirectories -----------------
 add_subdirectory(calibur/camera)
+add_subdirectory(calibur/imu)
 add_subdirectory(calibur/pf)
 add_subdirectory(calibur/pose)
 add_subdirectory(calibur/worker)
@@ -155,6 +156,7 @@ target_link_libraries(calibur_worker
     PRIVATE
         MvCameraControl
         calibur_worker_core
+        calibur_imu
         calibur_pf
         yolo_infer
         calibur_deps

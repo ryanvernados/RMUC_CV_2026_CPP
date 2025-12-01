@@ -145,6 +145,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.31.6/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.31.6/CMakeSystem.cmake"
   "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera/CMakeLists.txt"
+  "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/imu/CMakeLists.txt"
   "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/pf/CMakeLists.txt"
   "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/pose/CMakeLists.txt"
   "/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/worker/CMakeLists.txt"
@@ -165,6 +166,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/3.31.6/CMakeCUDACompiler.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   "calibur/camera/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "calibur/imu/CMakeFiles/CMakeDirectoryInformation.cmake"
   "calibur/pf/CMakeFiles/CMakeDirectoryInformation.cmake"
   "calibur/pose/CMakeFiles/CMakeDirectoryInformation.cmake"
   "calibur/worker/CMakeFiles/CMakeDirectoryInformation.cmake"
@@ -173,7 +175,8 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/calibur_worker.dir/DependInfo.cmake"
-  "calibur/camera/CMakeFiles/calibur_camera_test.dir/DependInfo.cmake"
+  "calibur/camera/CMakeFiles/test_camera.dir/DependInfo.cmake"
+  "calibur/imu/CMakeFiles/calibur_imu.dir/DependInfo.cmake"
   "calibur/pf/CMakeFiles/calibur_pf.dir/DependInfo.cmake"
   "calibur/pose/CMakeFiles/yolo_infer.dir/DependInfo.cmake"
   "calibur/worker/CMakeFiles/calibur_worker_core.dir/DependInfo.cmake"

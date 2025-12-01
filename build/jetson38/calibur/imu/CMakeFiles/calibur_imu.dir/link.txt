@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcalibur_imu.a CMakeFiles/calibur_imu.dir/imu_reader.cpp.o
+/usr/bin/ranlib libcalibur_imu.a

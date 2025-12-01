@@ -5,6 +5,7 @@
   CMakeFiles/calibur_worker.dir/main.cpp.o \
   /opt/MVS/lib/aarch64/libMvCameraControl.so \
   calibur/worker/libcalibur_worker_core.a \
+  calibur/imu/libcalibur_imu.a \
   calibur/pf/libcalibur_pf.a \
   calibur/pose/libyolo_infer.so \
   /usr/lib/gcc/aarch64-linux-gnu/13/../../../aarch64-linux-gnu/libnvinfer.so \
@@ -329,6 +330,8 @@ CMakeFiles/calibur_worker.dir/main.cpp.o:
 /opt/MVS/lib/aarch64/libMvCameraControl.so:
 
 calibur/worker/libcalibur_worker_core.a:
+
+calibur/imu/libcalibur_imu.a:
 
 calibur/pf/libcalibur_pf.a:
 
