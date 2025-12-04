@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/opt/MVS/include -I/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera -I/workspace/aimbot_cpp/RMUC_CV_2026_C- -isystem /usr/include/opencv4
+CXX_INCLUDES = -I/opt/MVS/include -I/workspace/aimbot_cpp/RMUC_CV_2026_C-/calibur/camera -I/workspace/aimbot_cpp/RMUC_CV_2026_C- -I/opt/MVS/lib/aarch64 -isystem /usr/include/opencv4
 
 CXX_FLAGS =  -rdynamic -O3 -g -Wall -g -std=gnu++17
 
