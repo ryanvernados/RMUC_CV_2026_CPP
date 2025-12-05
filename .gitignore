@@ -1,5 +1,7 @@
-.vscode
+# Compiled object files
 bin/
 build/
+
+# HikCamera SDK
 MvSdkLog/
 MvSDKLog/

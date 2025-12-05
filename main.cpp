@@ -22,40 +22,41 @@ void* init_camera_stub() {
 
     nRet = MV_CC_EnumDevices(MV_USB_DEVICE, &deviceList);
     if (nRet != MV_OK || deviceList.nDeviceNum == 0) {
-        std::cerr << "[init_camera] No camera found! nRet=" << nRet << std::endl;
+        std::cerr << "[CameraWorker] No camera found! nRet=" << nRet << std::endl;
         return nullptr;
     }
 
     void* handle = nullptr;
     nRet = MV_CC_CreateHandle(&handle, deviceList.pDeviceInfo[0]);
     if (nRet != MV_OK) {
-        std::cerr << "[init_camera] Create handle failed: " << nRet << std::endl;
+        std::cerr << "[CameraWorker] Create handle failed: " << nRet << std::endl;
         return nullptr;
     }
 
     nRet = MV_CC_OpenDevice(handle);
     if (nRet != MV_OK) {
-        std::cerr << "[init_camera] Open device failed: " << nRet << std::endl;
+        std::cerr << "[CameraWorker] Open device failed: " << nRet << std::endl;
         MV_CC_DestroyHandle(handle);
         return nullptr;
     }
 
     // Optional: configure acquisition/trigger mode here
-
+    MV_CC_SetIntValue(handle, "Height", 1080);
+    MV_CC_SetIntValue(handle, "Width", 1080);
     MV_CC_SetEnumValue(handle, "ExposureAuto", 2); 
     MV_CC_SetFloatValue(handle, "ExposureTime", 7000.0f); // 10 ms
     MV_CC_SetEnumValue(handle, "GainAuto", 2);
     MV_CC_SetEnumValue(handle, "AcquisitionMode", 2); // Continuous
     MV_CC_SetEnumValue(handle, "TriggerMode", 0);     // Off
 
-    std::cout << "[init_camera] Hik camera initialized.\n";
+    std::cout << "[CameraWorker] Hik camera initialized.\n";
     return handle;
  }
 void shutdown_camera_stub(void* handle) {
     if (!handle) return;
     MV_CC_CloseDevice(handle);
     MV_CC_DestroyHandle(handle);
-    std::cout << "[shutdown_camera] Hik camera closed.\n";
+    std::cout << "[CameraWorker] Hik camera closed.\n";
 }
 
 int main() {

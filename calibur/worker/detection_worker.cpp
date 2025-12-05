@@ -46,16 +46,22 @@ DetectionWorker::DetectionWorker(SharedLatest &shared,
 
     // Camera intrinsics
     camera_matrix = (cv::Mat_<double>(3, 3) <<
-        2431.4,    0.0,       320,
-        0.0,       2430.4,    320,
+        1219.9050,    0.0,       676.9765,
+        0.0,       1218.2991,    584.9604,
         0.0,       0.0,       1.0
     );
+    // camera_matrix = (cv::Mat_<double>(3, 3) <<
+    //     996.98,  0.0,   562.28,   
+    //     0.0,   1324.54, 556.88,  
+    //     0.0,     0.0,     1.0
+    // );
+
     dist_coeffs = (cv::Mat_<double>(1, 5) <<
-        -0.0041,
-        -0.6401,
-        -0.0035,
-         0.0043,
-        11.6468
+        -0.0851,
+        -0.2044,
+        -0.0010,
+         0.0018,
+        -0.2438
     );
 }
 
@@ -194,6 +200,8 @@ void DetectionWorker::solvepnp_and_yaw(std::vector<DetectionResult> &dets) {
             static_cast<float>(tvec.at<double>(1)),
             static_cast<float>(tvec.at<double>(2))
         );
+
+        det.tvec[1] = -det.tvec[1]; 
 
         // 6. Rodrigues to rotation matrix
         cv::Mat R;
