@@ -65,6 +65,7 @@ bool PFWorker::is_state_valid(const RobotState &state) {
 
 void PFWorker::operator()() {
     gpu_pf_init();
+
     auto next_tick = timestamp_clock_t::now();
     
     constexpr int MAX_FRAMES_WITHOUT_DETECTION = 30;  // ~0.3 seconds at 100Hz
@@ -104,9 +105,10 @@ void PFWorker::operator()() {
             // Validate detection
             if (!is_state_valid(meas)) {
                 std::cout << "[PF WARNING] Invalid detection received, skipping\n";
+
                 continue;
             }
-            
+
             // If not initialized or diverged, initialize/reset from measurement
             if (!pf_initialized) {
                 std::cout << "[PF] Initializing from first detection\n";
@@ -154,7 +156,8 @@ void PFWorker::operator()() {
                       << "x=" << pf_state.state[IDX_TX]
                       << " y=" << pf_state.state[IDX_TY]
                       << " z=" << pf_state.state[IDX_TZ] << std::endl;
-            
+
+
             // Force re-initialization on next detection
             pf_initialized = false;
             frames_without_detection_ = MAX_FRAMES_WITHOUT_DETECTION + 1;
@@ -164,7 +167,11 @@ void PFWorker::operator()() {
         std::cout << "[PF ] x=" << pf_state.state[IDX_TX]
                   << " y=" << pf_state.state[IDX_TY]
                   << " z=" << pf_state.state[IDX_TZ]
-                  << " yaw=" << pf_state.state[IDX_YAW] << std::endl;
+                  << " yaw=" << pf_state.state[IDX_YAW]
+                  << " h= " << pf_state.state[IDX_H]
+                  << " r1= " << pf_state.state[IDX_R1]
+                  << " r2= " << pf_state.state[IDX_R2] << std::endl;
+
 
         shared_.pf_out = std::make_shared<RobotState>(pf_state);
         shared_.pf_ver.fetch_add(1, std::memory_order_acq_rel);

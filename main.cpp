@@ -80,7 +80,7 @@ int main() {
     pool.submit(YoloWorker(std::ref(shared), std::ref(g_stop_flag), YOLO_MODEL_PATH));
     pool.submit(DetectionWorker(std::ref(shared), std::ref(scalars), std::ref(g_stop_flag)));
     pool.submit(PredictionWorker(std::ref(shared), std::ref(scalars), std::ref(g_stop_flag)));
-    //pool.submit(USBWorker(std::ref(shared), std::ref(scalars), std::ref(g_stop_flag)));
+    pool.submit(USBWorker(std::ref(shared), std::ref(scalars), std::ref(g_stop_flag)));
     pool.submit([&shared]() {
         DisplayWorker worker(shared, g_stop_flag);
         worker();

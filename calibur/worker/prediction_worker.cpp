@@ -210,10 +210,10 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     }
 
     Eigen::Matrix3f R_world2cam =
-        make_R_world2cam_from_yaw_pitch(imu_yaw, imu_pitch);
+        make_R_world2cam_from_yaw_pitch(relative_yaw, imu_pitch);
 
     cam_pos_lead = R_world2cam * world_pos_lead;
-    float yaw_cam_lead = yaw_lead_world - imu_yaw;
+    float yaw_cam_lead = yaw_lead_world - relative_yaw;
 
     if (!std::isfinite(cam_pos_lead[0]) ||
         !std::isfinite(cam_pos_lead[1]) ||
@@ -322,6 +322,12 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
             std::cout << "[GIMBAL LIMIT] " << status << std::endl;
         }
     }
+
+    std::cout << "[Pre]: " 
+            << armor_cam[0] << ", "
+            << armor_cam[1] << ", "
+            << armor_cam[2] << std::endl;
+
 
     // ----------------- 10) Write Outputs --------------------------
     out.yaw   = vis_yaw_;

@@ -32,7 +32,7 @@ constexpr float RC_GEOM_NOISE       = 1e-3f;
 // ===================== Initialization spreads ================
 constexpr float INIT_VEL_STD        = 0.2f;
 constexpr float INIT_GEOM_MEAN_R   = 0.30f;
-constexpr float INIT_GEOM_MEAN_H   = 0.30f;
+constexpr float INIT_GEOM_MEAN_H   = 0.0f;
 constexpr float INIT_GEOM_STD_R    = 0.05f;
 constexpr float INIT_GEOM_STD_H    = 0.05f;
 

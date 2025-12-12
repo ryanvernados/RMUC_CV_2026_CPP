@@ -4,6 +4,7 @@
 #include <atomic>
 #include <thread>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/core.hpp>
 
 #include "workers.hpp"
 #include "types.hpp"
@@ -72,11 +73,13 @@ void DetectionWorker::operator()() {
     static thread_local std::shared_ptr<IMUState> imu;
     static thread_local std::vector<DetectionResult> selected_armors;
     static thread_local std::vector<DetectionResult> dets;
+    static thread_local std::vector<DetectionResult> refined_dets;
     static thread_local std::vector<std::vector<DetectionResult>> grouped_armors;
-    //static thread_local RobotState robot;
 
     bool success = get_imu_yaw_pitch(this->shared_, imu_yaw, imu_pitch);
     if (success) scalars_.initial_yaw.store(imu_yaw);
+
+    int cnt = 0;
 
     while (!stop_.load(std::memory_order_relaxed)) {
 
@@ -102,8 +105,10 @@ void DetectionWorker::operator()() {
             selected_armors.clear();
             continue;
         }
+        
+        // Refine yolo detections using traditional CV methods for armorplate 
         // 2) keypoint refine + filtering by confidence
-        refine_keypoints(dets, yolo_result->width, yolo_result->height);
+        refined_dets = refine_keypoints(shared_.camera, dets);
 
         // 3) solvePnP + yaw in cam frame
         solvepnp_and_yaw(dets);
@@ -119,6 +124,12 @@ void DetectionWorker::operator()() {
         bool success = get_imu_yaw_pitch(this->shared_, imu_yaw, imu_pitch);
         float init_yaw = std::atomic_load(&scalars_.initial_yaw);
 
+        std::cout << "[PNP]: x=" << selected_armors[0].tvec[0]
+                          << " y="     << selected_armors[0].tvec[1]
+                          << " z="     << selected_armors[0].tvec[2] <<
+                      " yaw_rad: " << selected_armors[0].yaw_rad
+                      << std::endl;
+
         if (success) {
             const Eigen::Matrix3f R_cam2world = make_R_cam2world_from_yaw_pitch(imu_yaw - init_yaw, imu_pitch);
             for (auto &det : selected_armors) {
@@ -126,23 +137,18 @@ void DetectionWorker::operator()() {
                 cam2world(det, R_cam2world, imu_yaw - init_yaw, imu_pitch);
             }
 
-            std::cout << "[PNP]: x=" << selected_armors[0].tvec[0]
-                          << " y="     << selected_armors[0].tvec[1]
-                          << " z="     << selected_armors[0].tvec[2] <<
-                      " yaw_rad: " << selected_armors[0].yaw_rad
-                      << std::endl;
-
             // 6) form RobotState
             auto robot = form_robot(selected_armors);
             if (robot) {
                 robot->timestamp = yolo_result->timestamp;
-
+                
+                if (cnt%5 == 0){
                 std::cout << "[DET] x=" << robot->state[IDX_TX]
                           << " y="     << robot->state[IDX_TY]
                           << " z="     << robot->state[IDX_TZ]
                           << " yaw="   << robot->state[IDX_YAW]
                           << std::endl;
-
+                }
                 auto ptr = std::make_shared<RobotState>(*robot);
                 std::atomic_store(&shared_.detection_out, ptr);
                 shared_.detection_ver.fetch_add(1, std::memory_order_relaxed);
@@ -160,8 +166,48 @@ DetectionWorker::yolo_predict(const std::vector<uint8_t> &raw, int w, int h, std
     return {};
 }
 
-void DetectionWorker::refine_keypoints(std::vector<DetectionResult> &dets, int w, int h) {
-    // trad CV refine
+std::vector<DetectionResult> DetectionWorker::refine_keypoints(std::shared_ptr<CameraFrame> camera_frame, std::vector<DetectionResult> &dets) {
+    int height = camera_frame->height;
+    int width = camera_frame->width;
+    cv::Mat img = camera_frame->raw_data;
+    int count = 0;
+    for(const DetectionResult& det : dets) {
+        
+        // std::cout << "armorplate detected, armortype: " << (det.armor_type==0 ? "small" : "large") << std::endl;
+        count += 1;
+
+        std::vector<cv::Point2f> kps = det.keypoints;
+        float x_min = std::numeric_limits<float>::max();
+        float y_min = std::numeric_limits<float>::max();
+        float x_max = std::numeric_limits<float>::min();
+        float y_max = std::numeric_limits<float>::min();
+        for(const auto& p : kps) {
+            // std::cout << "[" << count << "]:(x=" << p.x << ",y=" << p.y << ")" << std::endl;
+            x_min = (p.x < x_min) ? p.x : x_min;
+            y_min = (p.y < y_min) ? p.y : y_min;
+            x_max = (p.x > x_max) ? p.x : x_max;
+            y_max = (p.y > y_max) ? p.y : y_max;
+        }
+        // std::cout << "Smallest X Coordinate: " << x_min << std::endl;
+        // std::cout << "Smallest Y coordinate: " << y_min << std::endl;
+        // std::cout << "Largest X Coordinate: " << x_max << std::endl;
+        // std::cout << "Largest Y Coordinate: " << y_max << std::endl;
+
+        int extend_pixels = 15.0;
+        // Extend the bounding box
+        int x_min_ext = std::max(0, ((int)x_min - extend_pixels));
+        int y_min_ext = std::max(0, ((int)y_min - extend_pixels));
+        int x_max_ext = std::min(width, ((int)x_max + extend_pixels));
+        int y_max_ext = std::min(height, ((int)y_max + extend_pixels));
+        // std::cout << "Extended bbox: " << x_min_ext << " " << y_min_ext << " " << x_max_ext << " " << y_max_ext << std::endl;
+        
+    
+    }
+    // std::cout << "The number of detections: " << count << std::endl; 
+    // std::cout << "The camera frame height: " << height << " width: " << width << std::endl;
+
+    
+    return dets;
 }
 
 void DetectionWorker::solvepnp_and_yaw(std::vector<DetectionResult> &dets) {
@@ -272,6 +318,7 @@ void DetectionWorker::select_armor(const std::vector<std::vector<DetectionResult
         ttl -= dt;
         if (ttl <= 0) {
             selected_robot_id = -1;
+            initial_yaw = 0.0f;
             selected_armors.clear();
         }
         return;
@@ -281,6 +328,7 @@ void DetectionWorker::select_armor(const std::vector<std::vector<DetectionResult
     if (selected_robot_id & 0x80000000) {   // id < 0
         selected_robot_id = choose_best_robot(grouped_armors);
         selected_armors = grouped_armors[selected_robot_id];
+        initial_yaw = 0.0f;
         ttl = MAX_TTL;
         return;
     }
@@ -310,6 +358,7 @@ void DetectionWorker::select_armor(const std::vector<std::vector<DetectionResult
     // FULL LOST → SWITCH TARGET
     selected_robot_id = choose_best_robot(grouped_armors);
     selected_armors = grouped_armors[selected_robot_id];
+    initial_yaw = 0.0f;
     ttl = MAX_TTL;
 
 }

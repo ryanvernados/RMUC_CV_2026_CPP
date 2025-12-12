@@ -163,8 +163,8 @@ private:
     std::vector<DetectionResult>
     yolo_predict(const std::vector<uint8_t> &raw, int width, int height, std::vector<DetectionResult> &dets);
 
-    void refine_keypoints(std::vector<DetectionResult> &dets,
-                          int width, int height);
+    std::vector<DetectionResult> refine_keypoints(std::shared_ptr<CameraFrame> camera_frame,
+        std::vector<DetectionResult> &dets);
 
     void solvepnp_and_yaw(std::vector<DetectionResult> &dets);
 

@@ -33,5 +33,10 @@ void USBWorker::process_usb_rx() {
 
 void USBWorker::usb_send_tx(const PredictionOut &out) {
     // encode yaw, pitch, aim, fire, chase to COM
+    std::cout << "aim: " << out.aim << "fire: " << out.fire 
+            << "yaw: " << out.yaw << "pitch: " << out.pitch 
+            << "chase: " << out.chase << std::endl;
+    
+    
 }
 

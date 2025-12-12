@@ -71,6 +71,7 @@ void DisplayWorker::operator()() {
 //  DRAW CROSSHAIR (center reticle, color-coded)
 // ============================================================================
 void DisplayWorker::draw_crosshair(cv::Mat &img, const PredictionOut *pred) {
+    // std::cout << "img.cols=" << img.cols << " img.rows=" << img.rows << std::endl;
     const int cx = img.cols / 2;
     const int cy = img.rows / 2;
     cv::Point center(cx, cy);
@@ -101,13 +102,14 @@ void DisplayWorker::draw_target_dot(cv::Mat &img,
                                     const PredictionOut *pred,
                                     int width, int height)
 {
+    // std::cout << "img.cols=" << width << " img.rows=" << height << std::endl;
     if (!pred) return;
 
     // Camera intrinsics approximated → replace with your exact values
-    const float fx = 2431.4f;
-    const float fy = 2430.4f;
-    const float cx = width  / 2.0f;
-    const float cy = height / 2.0f;
+    const float fx = 1219.50f;
+    const float fy = 1218.2f;
+    const float cx = 676.9765;
+    const float cy = 584.9604;
 
     // Convert yaw/pitch to pixel displacement
     float u = cx + fx * std::tan(pred->yaw);
