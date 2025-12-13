@@ -68,7 +68,7 @@ int main() {
 
     void* cam_handle = init_camera_stub(); // TODO: Hikvision init
 
-    ThreadPool pool(6); // Camera, IMU, Detection, Prediction, USB
+    ThreadPool pool(7); // Camera, IMU, Detection, Prediction, USB
 
     CameraMode mode = CameraMode::HIK_USB; 
     pool.submit(CameraWorker(cam_handle, shared, g_stop_flag, mode));
