@@ -6,17 +6,15 @@
 #include <chrono>
 #include <memory>
 #include <atomic>
-
-#include "../imu/imu_data.hpp"
-
+#include <array>        
 #include <opencv2/core.hpp>
 #include <Eigen/Dense>
-
 
 using Clock     = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
 
 #define ROBOT_STATE_VEC_LEN     15
+
 
 // =======================
 // Data Structures
@@ -29,6 +27,12 @@ enum StateIdx {
     IDX_AX = 6, IDX_AY = 7, IDX_AZ = 8,
     IDX_YAW   = 9, IDX_OMEGA = 10, IDX_ALPHA = 11,
     IDX_R1 = 12, IDX_R2 = 13, IDX_H  = 14
+};
+
+enum class TrackingFSM {
+    TARGET_SEARCHING,
+    TARGET_LOCKED,
+    TARGET_TEMPORARY_LOST
 };
 
 struct CameraFrame {
@@ -101,6 +105,10 @@ struct SharedLatest {
     std::shared_ptr<PredictionOut> prediction_out;
     std::shared_ptr<YoloOutput>    yolo;
 
+    // --- ADDED FOR REFINEMENT VISUALIZATION ---
+    // Use std::shared_ptr for atomic operations instead of std::atomic
+    std::shared_ptr<std::vector<DetectionResult>> refined_dets;
+
     // Version counters (increment per new publish)
     std::atomic<uint64_t> camera_ver     {0};
     std::atomic<uint64_t> imu_ver        {0};
@@ -119,3 +127,6 @@ struct SharedScalars {
         initial_yaw.store(0.0f, std::memory_order_relaxed);
     }
 };
+
+
+

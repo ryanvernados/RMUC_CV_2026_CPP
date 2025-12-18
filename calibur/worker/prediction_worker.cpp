@@ -50,7 +50,7 @@ void PredictionWorker::operator()() {
         uint64_t cur_ver = shared_.pf_ver.load(std::memory_order_relaxed);
         if (cur_ver == last_pf_ver_) {
             sleep_small();
-            continue; // no new PF state
+            continue;
         }
         last_pf_ver_ = cur_ver;
 
@@ -59,15 +59,12 @@ void PredictionWorker::operator()() {
         if (!pf || !imu) {
             continue;
         }
-        float init_yaw = std::atomic_load(&scalars_.initial_yaw);
-
         float measured_speed = scalars_.bullet_speed.load(std::memory_order_relaxed);
 
         PredictionOut out{};
-        compute_prediction(*pf, imu.get(), measured_speed, init_yaw, out);
+        compute_prediction(*pf, imu, measured_speed, out);
 
-        auto ptr = std::make_shared<PredictionOut>(out);
-        std::atomic_store(&shared_.prediction_out, ptr);
+        std::atomic_store(&shared_.prediction_out, std::make_shared<PredictionOut>(out));
         shared_.prediction_ver.fetch_add(1, std::memory_order_relaxed);
     }
 }
@@ -77,9 +74,8 @@ void PredictionWorker::sleep_small() {
 }
 
 void PredictionWorker::compute_prediction(const RobotState &rs,
-                                          const IMUState *imu,
+                                          const std::shared_ptr<IMUState>& imu,
                                           float measured_speed,
-                                          float init_yaw,
                                           PredictionOut &out)
 {
     // Re-used buffers per thread
@@ -112,11 +108,6 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     }
 
     if (!state_valid) {
-        std::cout << "[PRED ERROR] Invalid PF state detected! "
-                  << "x=" << state[0]
-                  << " y=" << state[1]
-                  << " z=" << state[2] << std::endl;
-
         out.yaw   = 0.0f;
         out.pitch = 0.0f;
         out.aim   = 0;
@@ -157,7 +148,6 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     const float speed = std::sqrt(vx*vx + vy*vy + vz*vz);
 
     constexpr float STATIONARY_SPEED_THRESH = 0.05f; // m/s
-
     float t_lead = 0.0f;
 
     if (speed < STATIONARY_SPEED_THRESH) {
@@ -198,35 +188,35 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     }
 
     // ----------------- 5) world -> camera using IMU ----------------
-    float relative_yaw = imu_yaw - init_yaw;
-    bool imu_ok = get_imu_yaw_pitch(this->shared_, relative_yaw, imu_pitch);
+    // Eigen::Quaternionf q_WI_local;
+    // bool imu_ok = get_imu_quat_world_from_imu(imu, q_WI_local);
+
+    // static const Eigen::Quaternionf q_IC = Eigen::Quaternionf::Identity();;
+    // Eigen::Matrix3f R_world2cam = make_R_world2cam_from_quat(q_WI_local, q_IC);
+
+    bool imu_ok = get_imu_yaw_pitch(shared_, imu_yaw, imu_pitch);
     if (!imu_ok) {
-        out.yaw   = 0.0f;
-        out.pitch = 0.0f;
-        out.aim   = 0;
-        out.fire  = 0;
-        out.chase = 0;
+        out.aim = out.fire = out.chase = 0;
+        out.yaw = out.pitch = 0.0f;
+        std::cout <<"[PRED ERROR] Invalid IMU pitch yaw!\n";
         return;
     }
-
-    Eigen::Matrix3f R_world2cam =
-        make_R_world2cam_from_yaw_pitch(relative_yaw, imu_pitch);
-
+    const Eigen::Matrix3f R_world2cam = make_R_world2cam_from_yaw_pitch(imu_yaw, imu_pitch);
     cam_pos_lead = R_world2cam * world_pos_lead;
-    float yaw_cam_lead = yaw_lead_world - relative_yaw;
+    float yaw_cam_lead = yaw_lead_world;
 
     if (!std::isfinite(cam_pos_lead[0]) ||
         !std::isfinite(cam_pos_lead[1]) ||
         !std::isfinite(cam_pos_lead[2])) {
-        std::cout << "[PRED ERROR] NaN after world2cam transform!\n";
+        // std::cout << "[PRED ERROR] NaN after world2cam transform!\n";
         out.yaw = out.pitch = 0.0f;
         out.aim = out.fire = out.chase = 0;
         return;
     }
 
     if (cam_pos_lead[2] <= 0.0f) {
-        std::cout << "[PRED ERROR] Robot behind camera! z="
-                  << cam_pos_lead[2] << std::endl;
+        // std::cout << "[PRED ERROR] Robot behind camera! z="
+        //           << cam_pos_lead[2] << std::endl;
         out.yaw = out.pitch = 0.0f;
         out.aim = out.fire = out.chase = 0;
         return;
@@ -240,6 +230,11 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
         state[12],   // r1
         state[13]);  // r2
 
+    // std::cout << "[Pre]: " 
+    //     << armor_cam[0] << ", "
+    //     << armor_cam[1] << ", "
+    //     << armor_cam[2] << std::endl;
+
     // ----------------- 7) Bullet drop correction ------------------
     const float t_bullet_travel =
         std::max(0.0f, t_lead - this->t_gimbal_actuation - proc);
@@ -251,7 +246,7 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     calculate_gimbal_correction(armor_cam, correction);
 
     if (!std::isfinite(correction[0]) || !std::isfinite(correction[1])) {
-        std::cout << "[PRED ERROR] NaN in gimbal correction!\n";
+        // std::cout << "[PRED ERROR] NaN in gimbal correction!\n";
         out.yaw = out.pitch = 0.0f;
         out.aim = out.fire = out.chase = 0;
         return;
@@ -307,11 +302,11 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
 
     // target reachability check uses raw correction (hardware limits)
     bool target_reachable = is_target_reachable(raw_yaw, raw_pitch);
-    if (!target_reachable) {
-        std::cout << "[PRED WARNING] Target out of gimbal range! raw_pitch="
-                  << (raw_pitch * 180.0f / M_PI) << " deg\n";
-        fire_state = false;
-    }
+    // if (!target_reachable) {
+    //     std::cout << "[PRED WARNING] Target out of gimbal range! raw_pitch="
+    //               << (raw_pitch * 180.0f / M_PI) << " deg\n";
+    //     fire_state = false;
+    // }
 
     if (is_at_pitch_limit(vis_pitch_)) {
         fire_state = false;
@@ -322,12 +317,6 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
             std::cout << "[GIMBAL LIMIT] " << status << std::endl;
         }
     }
-
-    std::cout << "[Pre]: " 
-            << armor_cam[0] << ", "
-            << armor_cam[1] << ", "
-            << armor_cam[2] << std::endl;
-
 
     // ----------------- 10) Write Outputs --------------------------
     out.yaw   = vis_yaw_;

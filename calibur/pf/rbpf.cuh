@@ -8,29 +8,30 @@
 constexpr int CUDA_BLOCK_SIZE = 256;
 
 // ===================== Process Noise (PF) =====================
-constexpr float Q_POS_DIFFUSION     = 1e-3f;
-constexpr float Q_YAW_DIFFUSION     = 5e-2f;
-constexpr float Q_ACC_RANDOMWALK    = 2e-2f;
-constexpr float Q_YAWACC_RANDOMWALK = 1e-3f;
+constexpr float Q_POS_DIFFUSION     = 1.2e-3f;
+constexpr float Q_YAW_DIFFUSION     = 4.0e-3f; 
+constexpr float Q_ACC_RANDOMWALK    = 6.0e-3f;  
+constexpr float Q_YAWACC_RANDOMWALK = 8.0e-4f;   
 
 // ===================== Process Noise (KF) =====================
-constexpr float Q_VEL_DIFFUSION     = 2e-3f;
-constexpr float Q_YAWRATE_DIFFUSION = 5e-4f;
-constexpr float Q_GEOM_DRIFT        = 1e-5f;
+constexpr float Q_VEL_DIFFUSION     = 1.5e-3f;
+constexpr float Q_YAWRATE_DIFFUSION = 5.0e-4f;
+constexpr float Q_GEOM_DRIFT        = 1.0e-6f;    
 
 // ===================== Measurement Noise =====================
-constexpr float RZ_POS_NOISE        = 2e-3f;
-constexpr float RZ_YAW_NOISE        = 4e-3f;
+constexpr float RZ_POS_NOISE        = 9.0e-2f;
+constexpr float RZ_YAW_NOISE        = 1.5e-1f;  
 
 // ===================== Pseudo-measurements ===================
-constexpr float RY_VEL_NOISE        = 5e-2f;
-constexpr float RY_YAWR_NOISE       = 2e-2f;
+constexpr float RY_VEL_NOISE        = 3.0e-1f;
+constexpr float RY_YAWR_NOISE       = 1.8e-1f;  
 
 // ===================== Geometry direct measurement ==========
-constexpr float RC_GEOM_NOISE       = 1e-3f;
+constexpr float RC_GEOM_NOISE       = 5e-3f;   
+
 
 // ===================== Initialization spreads ================
-constexpr float INIT_VEL_STD        = 0.2f;
+constexpr float INIT_VEL_STD       = 0.2f;
 constexpr float INIT_GEOM_MEAN_R   = 0.30f;
 constexpr float INIT_GEOM_MEAN_H   = 0.0f;
 constexpr float INIT_GEOM_STD_R    = 0.05f;

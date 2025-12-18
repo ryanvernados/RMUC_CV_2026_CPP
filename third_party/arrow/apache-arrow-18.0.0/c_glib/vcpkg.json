@@ -1,0 +1,9 @@
+{
+  "name": "arrow-glib",
+  "version-string": "18.0.0",
+  "dependencies": [
+    "glib",
+    "gobject-introspection",
+    "pkgconf"
+  ]
+}

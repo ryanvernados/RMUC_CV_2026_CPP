@@ -7,53 +7,35 @@
 
 #include "../imu/imu_reader.hpp"
 #include "../imu/imu_data.hpp"
+#include "../usb_communication.h"
 
 #include "types.hpp"
 #include "rbpf.cuh"
 #include "infer.h"
 
+namespace calibur { class USBCommunication; }
 
-// ------------------------------------------- Constants -------------------------------------------
-// ------------- File Paths ------------------------
-const std::string YOLO_MODEL_PATH   = "./calibur/models/best.engine";  //relative to the binary executable
+const std::string YOLO_MODEL_PATH   = "./calibur/models/best.engine";
 const std::string VIDEO_PATH        = "./sample_videos/video1.mp4";
 
-// const std::string kOnnxPath         = "../calibur/models/best.onnx";
-
-// ------------- Camera Worker ---------------------
-// #define USE_VIDEO_FILE
-#define DISPLAY_DETECTION
-#define PERFORMANCE_BENCHMARK
-
-// ------------- Detection Constants ---------------
 #define YOLO_CONFIDENCE_THRESHOLD               0.5f
-
 #define DEFAULT_ROBOT_RADIUS                    0.2f
 #define DEFAULT_ROBOT_HEIGHT                    0.0f
-#define SELECTOR_TTL                            0.5f    // seconds
-
-// ------------- PF constants ----------------------
-// #define PF_CONDITIONAL_RESAMPLE                
+#define SELECTOR_TTL                            0.5f
 static constexpr int NUM_PARTICLES = 10000;
-
-
-// ------------- Prediction Constants --------------
-#define ALPHA_BULLET_SPEED                      0.1f    // low-pass filter coeff, detemine using cutoff freq formula: alpha = 2πf_c * dt / (2πf_c * dt + 1)
+#define ALPHA_BULLET_SPEED                      0.1f
 #define ALPHA_PROCESSING_TIME                   0.1f
 #define PREDICTION_CONVERGENCE_THRESHOLD        0.01f
 #define CHASE_THREASHOLD                        6.0f
 #define PRED_CONV_MAX_ITERS                     10
-#define WIDTH_TOLERANCE                         0.13f  // meters
-#define HEIGHT_TOLERANCE                        0.13f  // meters
+#define WIDTH_TOLERANCE                         0.13f
+#define HEIGHT_TOLERANCE                        0.13f
 #define TOLERANCE_COEFF                         1.0f
-
-//--------------------------------------------Camera Worker--------------------------------------------
 
 enum class CameraMode {
     HIK_USB,
     VIDEO_FILE
 };
-
 
 class CameraWorker {
 public:
@@ -62,15 +44,13 @@ public:
                  std::atomic<bool>& stop_flag,
                  CameraMode mode);
 
-    void operator()();  // For thread pool execution
+    void operator()();
 
 private:
-    void* cam_;                // Hikvision handle
+    void* cam_;
     SharedLatest& shared_;
     std::atomic<bool>& stop_;
     CameraMode mode_;
-
-    // Only used for VIDEO_FILE mode
     cv::VideoCapture cap_;
     bool use_stub_ = false;
 
@@ -79,20 +59,13 @@ private:
     void grab_frame_from_video(CameraFrame& frame);
 };
 
-//--------------------------------------------IMU Worker--------------------------------------------
-
 class IMUWorker {
 public:
     IMUWorker(SharedLatest &shared, std::atomic<bool> &stop_flag);
-
-    // forbid copy
     IMUWorker(const IMUWorker&) = delete;
     IMUWorker& operator=(const IMUWorker&) = delete;
-
-    // allow move
     IMUWorker(IMUWorker&&) = default;
     IMUWorker& operator=(IMUWorker&&) = default;
-
     void operator()();
 
 private:
@@ -101,18 +74,13 @@ private:
     IMUReader reader_;
 };
 
-
-//--------------------------------------------YOLO Worker--------------------------------------------
 class YoloWorker {
 public:
     YoloWorker(SharedLatest& shared,
                std::atomic<bool>& stop_flag,
                const std::string& engine_path);
-
     ~YoloWorker() = default;
-
     void operator()();
-
     YoloWorker(const YoloWorker&) = delete;
     YoloWorker& operator=(const YoloWorker&) = delete;
     YoloWorker(YoloWorker&&) = default;
@@ -122,78 +90,53 @@ private:
     SharedLatest&       shared_;
     std::atomic<bool>&  stop_;
     uint64_t            last_cam_ver_ = 0;
-    YoloDetector        detector_;      // <-- persistent member
+    YoloDetector        detector_;
 };
-
-//--------------------------------------------Detection Worker--------------------------------------------
 
 class DetectionWorker {
 public:
     DetectionWorker(SharedLatest &shared, SharedScalars &shared_scalars,
                     std::atomic<bool> &stop_flag);
-
     void operator()();
 
 private:
     SharedLatest    &shared_;
     SharedScalars   &scalars_;
     std::atomic<bool> &stop_;
-
-    // "class variables"
     TimePoint   start_time_;
     int         selected_robot_id_;
     float       ttl_;
     float       initial_yaw_;
     uint64_t    last_cam_ver_;
+    TrackingFSM tracking_fsm_ = TrackingFSM::TARGET_SEARCHING;
     RobotState prev_robot_{};
     bool       has_prev_robot_ = false;
-
-    // Camera intrinsics
     cv::Mat     camera_matrix;
     cv::Mat     dist_coeffs;
-
-    // Yaw optimization helpers
     std::unordered_map<int, float> yaw_smooth_state;
-    float yaw_alpha = 0.3f; // smoothing factor: 0 = very smooth, 1 = no smoothing
+    float yaw_alpha = 0.3f;
 
     void sleep_small();
-
-    // ---- Interfaces for you to implement in .cpp ----
-
     std::vector<DetectionResult>
     yolo_predict(const std::vector<uint8_t> &raw, int width, int height, std::vector<DetectionResult> &dets);
-
     std::vector<DetectionResult> refine_keypoints(std::shared_ptr<CameraFrame> camera_frame,
         std::vector<DetectionResult> &dets);
-
-    void solvepnp_and_yaw(std::vector<DetectionResult> &dets);
-
+    bool solvepnp_and_yaw(DetectionResult &det,
+                                      const Eigen::Matrix3f &R_cam2world);
     void group_armors(const std::vector<DetectionResult> &dets,
                       std::vector<std::vector<DetectionResult>> &grouped);
-
-
-    void select_armor(const std::vector<std::vector<DetectionResult>> &grouped,
-                 float &ttl,
-                 int &selected_robot_id,
-                 float &initial_yaw,
-                 std::vector<DetectionResult> &selected);
-
+    void select_armor(const std::vector<std::vector<DetectionResult>> &grouped_armors,
+                 std::vector<DetectionResult> &selected_armors);
     std::unique_ptr<RobotState>
     form_robot(const std::vector<DetectionResult> &armors);
 };
 
-
-//--------------------------------------------PF Worker--------------------------------------------
 struct RBPFPosYawModelGPU;
 
 class PFWorker {
 public:
-    PFWorker(SharedLatest &shared, 
-             std::atomic<bool> &stop_flag);
-
-    // Runs as dedicated thread (not via pool)
+    PFWorker(SharedLatest &shared, std::atomic<bool> &stop_flag);
     void operator()();
-
     PFWorker(const PFWorker&) = delete;
     PFWorker& operator=(const PFWorker&) = delete;
     PFWorker(PFWorker&&) = default;
@@ -205,11 +148,7 @@ private:
     std::atomic<bool> &stop_;
     uint64_t           last_det_ver_ = 0;
     int frames_without_detection_;  
-
-    // Heap-allocated PF model
     std::unique_ptr<RBPFPosYawModelGPU> g_pf;
-
-    // PF / CUDA interfaces to implement in .cpp
     void gpu_pf_init();
     void gpu_pf_reset(const RobotState &meas);
     void gpu_pf_predict_only();
@@ -218,15 +157,11 @@ private:
     RobotState gpu_return_result();
 };
 
-
-//--------------------------------------------Prediction Worker--------------------------------------------
-
 class PredictionWorker {
 public:
     PredictionWorker(SharedLatest &shared,
                      SharedScalars &scalars,
                      std::atomic<bool> &stop_flag);
-
     void operator()();
 
 private:
@@ -240,30 +175,24 @@ private:
     int            fire_state = false;
     int            chase_state = false;
     int            aim_state = false;
-
     float vis_yaw_   = 0.0f;
     float vis_pitch_ = 0.0f;
     bool  vis_init_  = false;
 
     void sleep_small();
-
     void compute_prediction(const RobotState &rs,
-                            const IMUState *imu,
+                            const std::shared_ptr<IMUState>& imu,
                             float bullet_speed,
-                            float init_yaw,
                             PredictionOut &out);
-
     double time_to_double(const TimePoint &tp);
 };
-
-//--------------------------------------------Prediction Worker--------------------------------------------
 
 class USBWorker {
 public:
     USBWorker(SharedLatest &shared,
               SharedScalars &scalars,
-              std::atomic<bool> &stop_flag);
-
+              std::atomic<bool> &stop_flag,
+              std::shared_ptr<calibur::USBCommunication> usb_comm_);
     void operator()();
 
 private:
@@ -271,12 +200,10 @@ private:
     SharedScalars   &scalars_;
     std::atomic<bool> &stop_;
     uint64_t        last_pred_ver_;
-
     void process_usb_rx();
     void usb_send_tx(const PredictionOut &out);
+    std::shared_ptr<calibur::USBCommunication> usb_comm_;
 };
-
-//--------------------------------------------Display Worker--------------------------------------------
 
 class DisplayWorker {
 public:
@@ -286,12 +213,9 @@ public:
 private:
     SharedLatest &shared_;
     std::atomic<bool> &stop_flag_;
-
-    // Helpers
     void draw_crosshair(cv::Mat &img, const PredictionOut *pred);
     void draw_yolo_overlay(cv::Mat &img, const YoloOutput *yolo);
+    void draw_refined_overlay(cv::Mat &img, const std::vector<DetectionResult>* refined_dets);
     void draw_info_panel(cv::Mat &img, const PredictionOut *pred, double fps);
     void draw_target_dot(cv::Mat &img, const PredictionOut *pred, int width, int height);
-};                                                          
-
-
+};

@@ -102,14 +102,14 @@ void CameraWorker::grab_frame_stub(CameraFrame &frame) {
 
 // ---------- HIK camera grab ----------
 void CameraWorker::grab_frame_from_hik(CameraFrame &frame) {
-    static const unsigned int MAX_SRC_BUF = 1080 * 1080 * 3;
+    static const unsigned int MAX_SRC_BUF = 640 * 640 * 3;
     static unsigned char* pSrcData = [](){
         auto ptr = new unsigned char[MAX_SRC_BUF];
         return ptr;
     }();
 
     // Big enough for RGB/BGR8
-    static const unsigned int MAX_DST_BUF = 1080 * 1080 * 3;
+    static const unsigned int MAX_DST_BUF = 640 * 640 * 3;
     static unsigned char* pDstData = [](){
         auto ptr = new unsigned char[MAX_DST_BUF];
         return ptr;

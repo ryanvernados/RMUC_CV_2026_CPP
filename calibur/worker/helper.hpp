@@ -3,6 +3,10 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <opencv2/core.hpp>
+#include <opencv2/calib3d.hpp>
+#include <cmath>
 #include "types.hpp"
 
 using namespace std;
@@ -12,7 +16,7 @@ constexpr float HALF_PI = 0.5f * PI;
 constexpr float QUARTER_PI = 0.25f * PI;
 constexpr float TWO_PI  = 2.0f * PI;
 
-constexpr float GIMBAL_PITCH_MIN = -0.17f;  // ~-10° (looking down) - ADJUST THIS
+constexpr float GIMBAL_PITCH_MIN = -0.30f;  // ~-10° (looking down) - ADJUST THIS
 constexpr float GIMBAL_PITCH_MAX =  0.87f;  // ~+50° (looking up)   
 
 // Yaw limits - Full 360° rotation (no limits)
@@ -32,6 +36,56 @@ inline float wrap_pi(const float angle) {
 inline float deg2rad(float deg) {
     return deg * (PI / 180.0f);
 }
+static inline Eigen::Vector3d project_to_plane(const Eigen::Vector3d& v,
+                                               const Eigen::Vector3d& up_unit) {
+    return v - v.dot(up_unit) * up_unit;
+}
+
+static inline double signed_angle_about_up(const Eigen::Vector3d& a_in,
+                                           const Eigen::Vector3d& b_in,
+                                           const Eigen::Vector3d& up_unit) {
+    const Eigen::Vector3d a = a_in.normalized();
+    const Eigen::Vector3d b = b_in.normalized();
+    const double s = up_unit.dot(a.cross(b));
+    const double c = a.dot(b);
+    return std::atan2(s, c);
+}
+
+
+static inline Eigen::Quaternionf normalize_quat(Eigen::Quaternionf q) {
+    q.normalize();
+    if (q.w() < 0.0f) q.coeffs() *= -1.0f;
+    return q;
+}
+
+static inline bool get_imu_quat_world_from_imu(const std::shared_ptr<IMUState>& imu,
+                                              Eigen::Quaternionf& q_WI_out) {
+    if (!imu) return false;
+    // should be w x y z
+    q_WI_out = Eigen::Quaternionf(imu->quaternion[0], imu->quaternion[1], imu->quaternion[2], imu->quaternion[3]);
+    q_WI_out = normalize_quat(q_WI_out);
+    return true;
+}
+
+
+// Build camera->world rotation matrix using IMU quaternion + optional fixed alignment.
+static inline Eigen::Matrix3f make_R_cam2world_from_quat(const Eigen::Quaternionf& q_WI,
+                                                         const Eigen::Quaternionf& q_IC /* IMU<-CAM */) {
+    // world <- camera = (world <- IMU) * (IMU <- camera)
+    Eigen::Quaternionf q_WC = q_WI * q_IC;
+    return q_WC.toRotationMatrix();
+}
+
+static inline Eigen::Matrix3f make_R_world2cam_from_quat(
+    const Eigen::Quaternionf& q_WI,
+    const Eigen::Quaternionf& q_IC   // IMU <- CAM
+) {
+    // camera <- world = inverse(world <- camera)
+    Eigen::Quaternionf q_WC = q_WI * q_IC;
+    Eigen::Quaternionf q_CW = q_WC.conjugate();   // inverse rotation
+    return q_CW.toRotationMatrix();
+}
+
 
 inline bool get_imu_yaw_pitch(const SharedLatest &shared,
                               float &yaw_cam_world,
@@ -58,41 +112,47 @@ inline bool get_imu_yaw_pitch(const SharedLatest &shared,
     return true;
 }
 
-inline Eigen::Matrix3f make_R_cam2world_from_yaw_pitch(float yaw_cam_world,
-                                                        float pitch_cam_world)
+inline Eigen::Matrix3f make_R_cam2world_from_yaw_pitch(float yaw_left_pos,
+                                                       float pitch_down_pos)
 {
-    // - Positive pitch = camera tilts DOWN
-    // - Positive yaw = camera turns LEFT
-    // - Negative yaw = camera turns RIGHT
-    
-    // Camera frame: X=right, Y=down, Z=forward (standard OpenCV/computer vision)
-    // World frame: Need to determine, but rotations are relative to camera orientation
-    
-    // Rotation around X-axis (pitch)
-    // Positive pitch = tilting down
-    Eigen::Matrix3f Rpitch;
-    Rpitch << 1.0f,                  0.0f,                   0.0f,
-              0.0f,  std::cos(pitch_cam_world), -std::sin(pitch_cam_world),
-              0.0f,  std::sin(pitch_cam_world),  std::cos(pitch_cam_world);
-    
-    // Rotation around Y-axis (yaw)
-    // Based on your IMU data, the standard Y-axis rotation matrix should work
-    // Standard form for Y-axis rotation (right-hand rule):
-    Eigen::Matrix3f Ryaw;
-    // Ryaw <<  std::cos(yaw_cam_world), 0.0f, std::sin(yaw_cam_world),
-    //          0.0f,                    1.0f, 0.0f,
-    //         -std::sin(yaw_cam_world), 0.0f, std::cos(yaw_cam_world);
+    const float cy = std::cos(yaw_left_pos);
+    const float sy = std::sin(yaw_left_pos);
+    const float cp = std::cos(pitch_down_pos);
+    const float sp = std::sin(pitch_down_pos);
 
-    Ryaw <<  std::cos(yaw_cam_world), -std::sin(yaw_cam_world),     0.0f,
-             std::sin(yaw_cam_world), std::cos(yaw_cam_world),      0.0f,
-             0.0f                   , 0.0f                      ,   1.0f;
-    
-    // Build cam2world: apply pitch first (camera tilt), then yaw (camera pan)
-    Eigen::Matrix3f R_cam2world = Ryaw * Rpitch;
-    
-    // Return world2cam (inverse = transpose)
-    return R_cam2world.transpose();
+    // Camera forward axis (+Z_cam) expressed in world coords
+    // yaw left (+) => forward leans toward -X_world
+    // pitch down (+) => forward leans toward -Y_world
+    Eigen::Vector3f f_world(-sy * cp,   // x
+                            -sp,        // y
+                             cy * cp);  // z
+    f_world.normalize();
+
+    // Choose world up
+    const Eigen::Vector3f up_world(0.f, 1.f, 0.f);
+
+    // Camera right axis (+X_cam) in world coords
+    Eigen::Vector3f r_world = up_world.cross(f_world);
+    const float n = r_world.norm();
+    if (n < 1e-6f) {
+        // looking straight up/down; pick a fallback right axis
+        r_world = Eigen::Vector3f(1.f, 0.f, 0.f);
+    } else {
+        r_world /= n;
+    }
+
+    // Camera up axis (+Y_cam) in world coords
+    Eigen::Vector3f u_world = f_world.cross(r_world);  // ensures RH + orthonormal
+
+    // Columns = world vectors of camera axes: [X_cam, Y_cam, Z_cam]
+    Eigen::Matrix3f R;
+    R.col(0) = r_world;
+    R.col(1) = u_world;
+    R.col(2) = f_world;
+    return R; // cam -> world
 }
+
+
 
 
 inline Eigen::Matrix3f make_R_world2cam_from_yaw_pitch(float yaw_cam_world,

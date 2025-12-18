@@ -281,7 +281,6 @@ void PFWorker::operator()() {
             
             // If not initialized or diverged, initialize/reset from measurement
             if (!pf_initialized) {
-                std::cout << "[PF] Initializing from first detection\n";
                 gpu_pf_reset(meas);
                 pf_initialized = true;
             } else {
@@ -347,13 +346,13 @@ void PFWorker::operator()() {
         );
         // [RERUN] --------------------------------------------
 
-        std::cout << "[PF ] x=" << pf_state.state[IDX_TX]
-                  << " y=" << pf_state.state[IDX_TY]
-                  << " z=" << pf_state.state[IDX_TZ]
-                  << " yaw=" << pf_state.state[IDX_YAW]
-                  << " h= " << pf_state.state[IDX_H]
-                  << " r1= " << pf_state.state[IDX_R1]
-                  << " r2= " << pf_state.state[IDX_R2] << std::endl;
+        // std::cout << "[PF ] x=" << pf_state.state[IDX_TX]
+        //           << " y=" << pf_state.state[IDX_TY]
+        //           << " z=" << pf_state.state[IDX_TZ]
+        //           << " yaw=" << pf_state.state[IDX_YAW]
+        //           << " h= " << pf_state.state[IDX_H]
+        //           << " r1= " << pf_state.state[IDX_R1]
+        //           << " r2= " << pf_state.state[IDX_R2] << std::endl;
 
 
         shared_.pf_out = std::make_shared<RobotState>(pf_state);

@@ -3,6 +3,8 @@
 
 #include <string>
 #include <cstdint>
+#include <cstddef>
+#include "protocol_data.hpp"
 
 namespace calibur {
 
@@ -15,11 +17,12 @@ namespace calibur {
         bool close();
         bool isOpen() const;
         
-        // Send yaw and pitch
-        bool sendData(float yaw, float pitch, bool is_fire);
-        
+        bool sendData(Protocol::Type type, const void* data, std::size_t size); 
+
         // Configuration
         bool configure(int baudrate = 115200);
+
+        constexpr std::uint16_t crc16(const std::uint8_t* data, std::size_t size) noexcept;
 
         private:
             std::string device_path_;

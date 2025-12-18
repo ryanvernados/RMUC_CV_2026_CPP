@@ -140,12 +140,23 @@ target_link_libraries(calibur_deps INTERFACE
 )
 # -----------------------------------------------------------------
 
+
 # ----------------- Subdirectories -----------------
 add_subdirectory(calibur/camera)
 add_subdirectory(calibur/imu)
 add_subdirectory(calibur/pf)
 add_subdirectory(calibur/pose)
 add_subdirectory(calibur/worker)
+add_subdirectory(calibur/)
+
+
+# # Ensure USB communication and logger get compiled into the worker core library
+# if (TARGET calibur_worker_core)
+#     target_sources(calibur_worker_core PRIVATE
+#         ${CMAKE_SOURCE_DIR}/calibur/usb_communication.cpp
+#         ${CMAKE_SOURCE_DIR}/calibur/log.cpp
+#     )
+# endif()
 
 # ----------------- Executable -----------------
 add_executable(calibur_worker
