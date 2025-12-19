@@ -113,6 +113,21 @@ namespace calibur {
         return true;
     }
 
+    std::uint16_t USBCommunication::crc16_(const std::uint8_t* data, std::size_t size) {
+        std::uint16_t crc = 0xFFFF;
+        for(std::size_t i = 0; i < size; ++i) {
+            crc ^= static_cast<std::uint16_t>(data[i]) << 8;
+            for (int j =0; j < 8; ++j) {
+                if (crc & 0x8000) {
+                    crc = (crc << 1) ^ 0x1021;
+                } else {
+                    crc <<= 1;
+                }
+            }
+        }
+        return crc;
+    }
+
     bool USBCommunication::sendData(Protocol::Type type, const void* data, std::size_t size) {
         if (!is_open_ || fd_ < 0) {
             // CALIBUR_LOG_ERROR(g_logger) << "Cannot send: USB device not open";
@@ -135,7 +150,7 @@ namespace calibur {
 
         std::memcpy(&packet[payload_offset], data, size);
 
-        std::uint16_t crc = crc16(packet, total_no_crc);
+        std::uint16_t crc = crc16_(packet, total_no_crc);
         packet[total_no_crc] = crc & 0xFF;
         packet[total_no_crc + 1] = (crc >> 8) & 0xFF;
         
@@ -149,21 +164,7 @@ namespace calibur {
         return true;
     }
 
-    constexpr std::uint16_t crc16(const std::uint8_t* data, std::size_t size) noexcept {
-        std::uint16_t crc = 0xFFFF;
-
-        for(std::size_t i = 0; i < size; ++i) {
-            crc ^= static_cast<std::uint16_t>(data[i]) << 8;
-            for (int j =0; j < 8; ++j) {
-                if (crc & 0x8000) {
-                    crc = (crc << 1) ^ 0x1021;
-                } else {
-                    crc <<= 1;
-                }
-            }
-        }
-        return crc;
-    }
+    
 
 
 } 

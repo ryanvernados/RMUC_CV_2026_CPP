@@ -61,106 +61,85 @@ static inline Eigen::Quaternionf normalize_quat(Eigen::Quaternionf q) {
 static inline bool get_imu_quat_world_from_imu(const std::shared_ptr<IMUState>& imu,
                                               Eigen::Quaternionf& q_WI_out) {
     if (!imu) return false;
-    // should be w x y z
-    q_WI_out = Eigen::Quaternionf(imu->quaternion[0], imu->quaternion[1], imu->quaternion[2], imu->quaternion[3]);
-    q_WI_out = normalize_quat(q_WI_out);
+
+    // IMU provides (w, x, y, z)
+    Eigen::Quaternionf q_raw(imu->quaternion[0],
+                             imu->quaternion[1],
+                             imu->quaternion[2],
+                             imu->quaternion[3]);
+    q_raw = normalize_quat(q_raw);
+    static const Eigen::Quaternionf q_Wfix = []{
+        Eigen::Matrix3f T;
+        T <<  1,  0,  0,
+              0,  1,  0,
+              0,  0,  1;
+        return Eigen::Quaternionf(T);
+    }();
+
+    // World-frame change => LEFT multiply
+    q_WI_out = normalize_quat(q_Wfix * q_raw);
     return true;
 }
 
 
-// Build camera->world rotation matrix using IMU quaternion + optional fixed alignment.
-static inline Eigen::Matrix3f make_R_cam2world_from_quat(const Eigen::Quaternionf& q_WI,
-                                                         const Eigen::Quaternionf& q_IC /* IMU<-CAM */) {
-    // world <- camera = (world <- IMU) * (IMU <- camera)
+static inline Eigen::Matrix3f make_R_cam2world_from_quat(
+    const Eigen::Quaternionf& q_WI,
+    const Eigen::Quaternionf& q_IC
+) {
     Eigen::Quaternionf q_WC = q_WI * q_IC;
     return q_WC.toRotationMatrix();
 }
 
 static inline Eigen::Matrix3f make_R_world2cam_from_quat(
     const Eigen::Quaternionf& q_WI,
-    const Eigen::Quaternionf& q_IC   // IMU <- CAM
+    const Eigen::Quaternionf& q_IC
 ) {
-    // camera <- world = inverse(world <- camera)
     Eigen::Quaternionf q_WC = q_WI * q_IC;
-    Eigen::Quaternionf q_CW = q_WC.conjugate();   // inverse rotation
-    return q_CW.toRotationMatrix();
+    return q_WC.conjugate().toRotationMatrix();
 }
 
-
 inline bool get_imu_yaw_pitch(const SharedLatest &shared,
-                              float &yaw_cam_world,
-                              float &pitch_cam_world) {
+                              float &yaw_left_pos,
+                              float &pitch_down_pos) {
     std::shared_ptr<IMUState> imu_ptr = std::atomic_load(&shared.imu);
-    if (!imu_ptr) {
-        return false;
-    }
+    if (!imu_ptr) return false;
 
     const IMUState &imu = *imu_ptr;
+    if (imu.euler_angle.size() < 3) return false;
 
-    if (imu.euler_angle.size() < 3) {
-        return false;
-    }
-    // euler_angle = {roll, pitch, yaw} in *world frame*
-    // float roll_deg  = imu.euler_angle[0];
     float pitch_deg = imu.euler_angle[1];
-    float yaw_deg   = imu.euler_angle[2];
-
-
-    pitch_cam_world = deg2rad(pitch_deg);
-    yaw_cam_world   = deg2rad(yaw_deg);
+    float yaw_deg   = imu.euler_angle[2]; 
+    pitch_down_pos = -deg2rad(pitch_deg);
+    yaw_left_pos   = -deg2rad(yaw_deg);
 
     return true;
 }
 
+
 inline Eigen::Matrix3f make_R_cam2world_from_yaw_pitch(float yaw_left_pos,
                                                        float pitch_down_pos)
 {
-    const float cy = std::cos(yaw_left_pos);
-    const float sy = std::sin(yaw_left_pos);
-    const float cp = std::cos(pitch_down_pos);
-    const float sp = std::sin(pitch_down_pos);
+    const float cy = std::cos(-yaw_left_pos);
+    const float sy = std::sin(-yaw_left_pos);
+    const float cp = std::cos(-pitch_down_pos);
+    const float sp = std::sin(-pitch_down_pos);
 
-    // Camera forward axis (+Z_cam) expressed in world coords
-    // yaw left (+) => forward leans toward -X_world
-    // pitch down (+) => forward leans toward -Y_world
-    Eigen::Vector3f f_world(-sy * cp,   // x
-                            -sp,        // y
-                             cy * cp);  // z
-    f_world.normalize();
-
-    // Choose world up
-    const Eigen::Vector3f up_world(0.f, 1.f, 0.f);
-
-    // Camera right axis (+X_cam) in world coords
-    Eigen::Vector3f r_world = up_world.cross(f_world);
-    const float n = r_world.norm();
-    if (n < 1e-6f) {
-        // looking straight up/down; pick a fallback right axis
-        r_world = Eigen::Vector3f(1.f, 0.f, 0.f);
-    } else {
-        r_world /= n;
-    }
-
-    // Camera up axis (+Y_cam) in world coords
-    Eigen::Vector3f u_world = f_world.cross(r_world);  // ensures RH + orthonormal
-
-    // Columns = world vectors of camera axes: [X_cam, Y_cam, Z_cam]
     Eigen::Matrix3f R;
-    R.col(0) = r_world;
-    R.col(1) = u_world;
-    R.col(2) = f_world;
-    return R; // cam -> world
+
+    R <<  cy,        sy * sp,    -sy * cp,
+          0.f,       cp,         -sp,
+          sy,       -cy * sp,     cy * cp;
+
+    return R;
 }
 
 
-
-
-inline Eigen::Matrix3f make_R_world2cam_from_yaw_pitch(float yaw_cam_world,
-                                                        float pitch_cam_world)
-{
-    Eigen::Matrix3f R_cam2world = make_R_cam2world_from_yaw_pitch(yaw_cam_world, pitch_cam_world);
+inline Eigen::Matrix3f make_R_world2cam_from_yaw_pitch(float yaw_left_pos,
+                                                       float pitch_down_pos) {
+    Eigen::Matrix3f R_cam2world = make_R_cam2world_from_yaw_pitch(yaw_left_pos, pitch_down_pos);
     return R_cam2world.transpose();
 }
+
 
 inline void clamp_to_gimbal_limits(float &yaw, float &pitch) {
     // Clamp pitch with safety margin

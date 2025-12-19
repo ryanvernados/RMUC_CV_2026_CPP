@@ -60,7 +60,7 @@ int main() {
     std::signal(SIGTERM, signal_handler);
     SharedLatest  shared;
     SharedScalars scalars;
-    auto usb_comm = std::make_shared<calibur::USBCommunication>("/dev/ttyUSB0");
+    auto usb_comm = std::make_shared<calibur::USBCommunication>("/dev/ttyACM1");
     
     // Initialize refined_dets to empty
     shared.refined_dets = std::make_shared<std::vector<DetectionResult>>();

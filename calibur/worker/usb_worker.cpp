@@ -14,6 +14,8 @@ USBWorker::USBWorker(SharedLatest &shared,
     : shared_(shared), scalars_(scalars), stop_(stop_flag), last_pred_ver_(0), usb_comm_(std::move(usb_comm)) {}
 
 void USBWorker::operator()() {
+    usb_comm_->open();
+    usb_comm_->configure(115200);
     while (!stop_.load(std::memory_order_relaxed)) {
         process_usb_rx(); // updates scalars_.bullet_speed etc.
 
@@ -21,15 +23,16 @@ void USBWorker::operator()() {
         if (cur_ver == last_pred_ver_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue; // no new prediction
+        
         }
         last_pred_ver_ = cur_ver;
 
         auto pred = std::atomic_load(&shared_.prediction_out);
          
         Protocol::AngleData ang{.pitch = 10.5f, .yaw = -22.0f};
-        usb_comm_->sendData(ang);
-        Protocol::CommandData cmd{.fire = 1, .aim = 0, ..chase = 1};
-        usb_comm_->sendData(ang);
+        usb_comm_->sendData(Protocol::Type::angle_correction, &ang, sizeof(Protocol::AngleData));
+        Protocol::CommandData cmd{.fire = 1, .aim = 0, .chase = 1};
+        usb_comm_->sendData(Protocol::Type::command, &cmd, sizeof(Protocol::CommandData));
         
         // Switch off for now, uncomment when pipeline is stable to send data
         // if (pred) {
@@ -46,6 +49,6 @@ void USBWorker::process_usb_rx() {
 
 void USBWorker::usb_send_tx(const PredictionOut &out) {
     // encode yaw, pitch, aim, fire, chase to COM
-    usb_comm_->sendData(out.yaw, out.pitch, out.aim, out.fire, out.chase);
+    // usb_comm_->sendData(out.yaw, out.pitch, out.aim, out.fire, out.chase);
 }
 

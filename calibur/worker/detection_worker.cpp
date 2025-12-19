@@ -74,11 +74,11 @@ void DetectionWorker::operator()() {
             continue;
         }
 
-        // Eigen::Quaternionf q_WI_local;
-        // if (!get_imu_quat_world_from_imu(imu, q_WI_local)) {
-        //     sleep_small();
-        //     continue;
-        // }
+        Eigen::Quaternionf q_WI_local;
+        if (!get_imu_quat_world_from_imu(imu, q_WI_local)) {
+            sleep_small();
+            continue;
+        }
         // std::cout << "[IMU] Quaternion (W_I_local): "
         //           << q_WI_local.w() << ", "
         //           << q_WI_local.x() << ", "
@@ -110,6 +110,9 @@ void DetectionWorker::operator()() {
         }
         std::cout << "[IMU] Yaw: " << imu_yaw * 180 / M_PI << ", Pitch: " << imu_pitch * 180 / M_PI << std::endl;
         const Eigen::Matrix3f R_cam2world = make_R_cam2world_from_yaw_pitch(imu_yaw, imu_pitch);
+        std::cout << "right   " << R_cam2world.col(0).transpose() << "\n";
+        std::cout << "up      " << R_cam2world.col(1).transpose() << "\n";
+        std::cout << "forward " << R_cam2world.col(2).transpose() << "\n";
 
         for (auto &det : raw_dets) {
             solvepnp_and_yaw(det, R_cam2world); // modifies det in-place (tvec/yaw now in WORLD)
@@ -133,14 +136,6 @@ void DetectionWorker::operator()() {
             // Transform from camera frame to world frame
             det.tvec = R_cam2world * det.tvec;
         }       
-
-        // for (const auto& armor : selected_armors) {
-	    //     std::cout << "[TNS]: x=" << armor.tvec[0]
-        //                      << " y="     << armor.tvec[1]
-        //                      << " z="     << armor.tvec[2] <<
-        //                  " yaw_rad: " << armor.yaw_rad
-        //                  << std::endl;
-        // }
         auto robot = form_robot(selected_armors);
         if (robot) {
             robot->timestamp = yolo_ptr->timestamp;
@@ -241,11 +236,9 @@ bool DetectionWorker::solvepnp_and_yaw(
         return false;
     }
 
-    // 1) Order image points
     auto img_pts_arr = order_quad_clockwise(det.keypoints);
     std::vector<cv::Point2f> img_pts(img_pts_arr.begin(), img_pts_arr.end());
 
-    // 2) Object points
     std::vector<cv::Point3f> obj_pts;
     get_object_points(det.armor_type, obj_pts);
     if (obj_pts.size() != 4) {
@@ -253,7 +246,6 @@ bool DetectionWorker::solvepnp_and_yaw(
         return false;
     }
 
-    // 3) SolvePnP (OpenCV camera frame: x right, y down, z forward)
     cv::Mat rvec, tvec;
     bool ok = cv::solvePnP(
         obj_pts, img_pts,
@@ -267,13 +259,9 @@ bool DetectionWorker::solvepnp_and_yaw(
         return false;
     }
 
-
     det.rvec[0] = static_cast<float>(rvec.at<double>(0));
     det.rvec[1] = static_cast<float>(rvec.at<double>(1));
     det.rvec[2] = static_cast<float>(rvec.at<double>(2));
-
-    // OpenCV cam (y down) -> your cam (y up)
-    // v_yourCam = F * v_cvCam
     const Eigen::Matrix3f F = (Eigen::Matrix3f() <<
         1,  0, 0,
         0, -1, 0,
@@ -286,21 +274,13 @@ bool DetectionWorker::solvepnp_and_yaw(
         static_cast<float>(tvec.at<double>(2))
     );
 
-    // cvCam -> yourCam
     Eigen::Vector3f t_cam = F * t_cam_cv;
-
-    // yourCam -> world
+    std::cout << "[CHK] t_cam_recovered = " << t_cam.transpose() << "\n";
     det.tvec = R_cam2world * t_cam;
 
     // ---------------- ROTATION ----------------
     cv::Mat Rcv;
     cv::Rodrigues(rvec, Rcv);
-
-    std::cout << "[PNP_Before_R]: x=" << tvec.at<double>(0)
-                             << " y="     << tvec.at<double>(1)
-                             << " z="     << tvec.at<double>(2)
-                        //  << " yaw_rad: " << Rcv.at<double>(0)
-                         << std::endl;
 
     Eigen::Matrix3f R_armor2cam_cv;
     R_armor2cam_cv <<
@@ -308,26 +288,20 @@ bool DetectionWorker::solvepnp_and_yaw(
         static_cast<float>(Rcv.at<double>(1,0)), static_cast<float>(Rcv.at<double>(1,1)), static_cast<float>(Rcv.at<double>(1,2)),
         static_cast<float>(Rcv.at<double>(2,0)), static_cast<float>(Rcv.at<double>(2,1)), static_cast<float>(Rcv.at<double>(2,2));
 
-    // cvCam -> yourCam
     // Eigen::Matrix3f R_armor2cam = F * R_armor2cam_cv * F;
-
-    // armor -> world
-    Eigen::Matrix3f R_armor2world = R_cam2world * R_armor2cam_cv;
-
-    // ---------------- YAW ----------------
-    // armor forward = +Z, yaw about +Y in your world (x right, y up, z forward)
+    // Eigen::Matrix3f R_armor2world = R_cam2world * R_armor2cam;
+    Eigen::Matrix3f R_armor2world = F * R_armor2cam_cv * F;
     Eigen::Vector3f f_world = R_armor2world.col(2);
-
     float yaw = std::atan2(f_world.x(), f_world.z());
-    yaw = wrap_pi_f(yaw);
+    yaw = wrap_pi_f(yaw); 
 
-    // fold to [-pi/2, pi/2] if that's your GT constraint
     if (yaw >  static_cast<float>(M_PI_2)) yaw -= static_cast<float>(M_PI);
     if (yaw < -static_cast<float>(M_PI_2)) yaw += static_cast<float>(M_PI);
 
     det.yaw_rad = yaw;
     return true;
 }
+
 
 void DetectionWorker::group_armors(const std::vector<DetectionResult> &dets,
                                    std::vector<std::vector<DetectionResult>> &grouped) {
