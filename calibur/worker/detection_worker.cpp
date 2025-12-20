@@ -38,12 +38,20 @@ DetectionWorker::DetectionWorker(SharedLatest &shared,
       initial_yaw_(0.0f),
       last_cam_ver_(0)
 {
-    camera_matrix = (cv::Mat_<double>(3,3) <<
-        515, 0.0, 320.0,
-        0.0, 686, 320.0,
-        0.0, 0.0, 1.0);
-    
-    dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
+    camera_matrix = (cv::Mat_<double>(3, 3) <<
+        1220.3055,    0.0,          694.5965,
+        0.0,          1217.5784,    575.5400,
+        0.0,          0.0,          1.0
+    );
+    //dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
+
+    dist_coeffs = (cv::Mat_<double>(1, 5) <<
+        -0.0482,
+        -0.0967,
+         0.0002,
+         0.0081,
+         0.7152
+    );
 }
 
 void DetectionWorker::sleep_small() {
@@ -54,6 +62,18 @@ void DetectionWorker::operator()() {
 
     static thread_local float imu_yaw = 0.0f;
     static thread_local float imu_pitch = 0.0f;
+
+
+    {   //init yaw storage
+        std::shared_ptr<IMUState> imu_ptr = std::atomic_load(&shared_.imu);
+        if (imu_ptr) {
+            const float yaw_deg = imu_ptr->euler_angle[2];
+            std::atomic_store(&scalars_.initial_yaw, yaw_deg);
+        } else {
+            // fallback: zero heading if IMU not ready yet
+            std::atomic_store(&scalars_.initial_yaw, 0.0f);
+        }
+    }
 
     while (!stop_.load(std::memory_order_relaxed)) {
         // Check for new YOLO output
@@ -74,16 +94,11 @@ void DetectionWorker::operator()() {
             continue;
         }
 
-        Eigen::Quaternionf q_WI_local;
-        if (!get_imu_quat_world_from_imu(imu, q_WI_local)) {
-            sleep_small();
-            continue;
-        }
-        // std::cout << "[IMU] Quaternion (W_I_local): "
-        //           << q_WI_local.w() << ", "
-        //           << q_WI_local.x() << ", "
-        //           << q_WI_local.y() << ", "
-        //           << q_WI_local.z() << "\n";
+        // Eigen::Quaternionf q_WI_local;
+        // if (!get_imu_quat_world_from_imu(imu, q_WI_local)) {
+        //     sleep_small();
+        //     continue;
+        // }
 
         // Make a copy of YOLO detections
         auto raw_dets = yolo_ptr->dets;
@@ -103,7 +118,7 @@ void DetectionWorker::operator()() {
         // 3. Solve PnP and compute yaw for refined detections
         // static const Eigen::Quaternionf q_IC = Eigen::Quaternionf::Identity();
         // const Eigen::Matrix3f R_cam2world = make_R_cam2world_from_quat(q_WI_local, q_IC);
-        bool imu_ok = get_imu_yaw_pitch(shared_, imu_yaw, imu_pitch);
+        bool imu_ok = get_imu_yaw_pitch(shared_, scalars_, imu_yaw, imu_pitch);
         if (!imu_ok) {
             sleep_small();
             continue;
@@ -124,6 +139,7 @@ void DetectionWorker::operator()() {
         // 5. Select best armor set
         std::vector<DetectionResult> selected_armors;
         select_armor(grouped_armors, selected_armors);
+
         for (const auto& armor : selected_armors) {
 	        std::cout << "[PNP_After_R]: x=" << armor.tvec[0]
                              << " y="     << armor.tvec[1]
@@ -132,10 +148,6 @@ void DetectionWorker::operator()() {
                          << std::endl;
         }
 
-        for (auto &det : selected_armors) {
-            // Transform from camera frame to world frame
-            det.tvec = R_cam2world * det.tvec;
-        }       
         auto robot = form_robot(selected_armors);
         if (robot) {
             robot->timestamp = yolo_ptr->timestamp;
@@ -144,6 +156,9 @@ void DetectionWorker::operator()() {
                 << " y="     << robot->state[IDX_TY]
                 << " z="     << robot->state[IDX_TZ]
                 << " yaw="   << robot->state[IDX_YAW]
+                << " h="    << robot->state[IDX_H]
+                << " r1="   << robot->state[IDX_R1]
+                << " r2="   << robot->state[IDX_R2]
                 << std::endl;
             auto robot_ptr = std::make_shared<RobotState>(*robot);
             std::atomic_store(&shared_.detection_out, robot_ptr);
@@ -275,7 +290,6 @@ bool DetectionWorker::solvepnp_and_yaw(
     );
 
     Eigen::Vector3f t_cam = F * t_cam_cv;
-    std::cout << "[CHK] t_cam_recovered = " << t_cam.transpose() << "\n";
     det.tvec = R_cam2world * t_cam;
 
     // ---------------- ROTATION ----------------
@@ -288,9 +302,9 @@ bool DetectionWorker::solvepnp_and_yaw(
         static_cast<float>(Rcv.at<double>(1,0)), static_cast<float>(Rcv.at<double>(1,1)), static_cast<float>(Rcv.at<double>(1,2)),
         static_cast<float>(Rcv.at<double>(2,0)), static_cast<float>(Rcv.at<double>(2,1)), static_cast<float>(Rcv.at<double>(2,2));
 
-    // Eigen::Matrix3f R_armor2cam = F * R_armor2cam_cv * F;
-    // Eigen::Matrix3f R_armor2world = R_cam2world * R_armor2cam;
-    Eigen::Matrix3f R_armor2world = F * R_armor2cam_cv * F;
+    Eigen::Matrix3f R_armor2cam = F * R_armor2cam_cv * F;
+    Eigen::Matrix3f R_armor2world = R_cam2world * R_armor2cam;
+    // Eigen::Matrix3f R_armor2world = F * R_armor2cam_cv * F;
     Eigen::Vector3f f_world = R_armor2world.col(2);
     float yaw = std::atan2(f_world.x(), f_world.z());
     yaw = wrap_pi_f(yaw); 
@@ -339,52 +353,143 @@ void DetectionWorker::group_armors(const std::vector<DetectionResult> &dets,
     }
 }
 
+
 void DetectionWorker::select_armor(const std::vector<std::vector<DetectionResult>> &grouped_armors,
-                                   std::vector<DetectionResult> &selected_armors) {
-    if (grouped_armors.empty()) return;
-    
-    int best_group_idx = -1;
-    float best_score = -1.0f;
-    
-    for (size_t i = 0; i < grouped_armors.size(); i++) {
-        const auto &group = grouped_armors[i];
-        if (group.empty()) continue;
-        
-        float group_score = 0.0f;
-        
-        // Score based on:
-        // 1. Confidence
-        // 2. Distance to image center
-        // 3. Size (closer objects are larger)
-        
-        for (const auto &det : group) {
-            float conf_score = det.confidence_level;
-            
-            cv::Point center(det.bbox.x + det.bbox.width/2,
-                            det.bbox.y + det.bbox.height/2);
-            float center_dist = std::sqrt(
-                std::pow(center.x - 320, 2) +
-                std::pow(center.y - 320, 2)
-            );
-            float center_score = 1.0f / (1.0f + center_dist / 100.0f);
-            
-            float size_score = std::min(1.0f, 
-                (det.bbox.width * det.bbox.height) / (640.0f * 480.0f) * 10.0f);
-            
-            group_score += (conf_score * 0.5f + center_score * 0.3f + size_score * 0.2f);
+                                  std::vector<DetectionResult> &selected_armors)
+{
+    std::cout << "FSM state: " << static_cast<int>(tracking_fsm_) << ", selected_robot_id_: " << selected_robot_id_ << ", ttl_: " << ttl_ << std::endl;
+    selected_armors.clear();
+    auto pick_best_group_idx = [&]() -> int {
+        if (grouped_armors.empty()) return -1;
+
+        int best_group_idx = -1;
+        float best_score = -1.0f;
+
+        for (size_t i = 0; i < grouped_armors.size(); i++) {
+            const auto &group = grouped_armors[i];
+            if (group.empty()) continue;
+
+            float group_score = 0.0f;
+
+            for (const auto &det : group) {
+                float conf_score = det.confidence_level;
+
+                cv::Point center(det.bbox.x + det.bbox.width/2,
+                                 det.bbox.y + det.bbox.height/2);
+
+                float center_dist = std::sqrt(
+                    std::pow(center.x - 320, 2) +
+                    std::pow(center.y - 320, 2)
+                );
+                float center_score = 1.0f / (1.0f + center_dist / 100.0f);
+
+                float size_score = std::min(1.0f,
+                    (det.bbox.width * det.bbox.height) / (640.0f * 480.0f) * 10.0f);
+
+                group_score += (conf_score * 0.5f + center_score * 0.3f + size_score * 0.2f);
+            }
+
+            group_score /= static_cast<float>(group.size());
+
+            if (group_score > best_score) {
+                best_score = group_score;
+                best_group_idx = static_cast<int>(i);
+            }
         }
-        
-        group_score /= group.size();  // Average score
-        
-        if (group_score > best_score) {
-            best_score = group_score;
-            best_group_idx = i;
+
+        return best_group_idx;
+    };
+
+    // Helper: find group index by class_id
+    auto find_group_by_id = [&](int id) -> int {
+        if (id < 0) return -1;
+        for (size_t i = 0; i < grouped_armors.size(); i++) {
+            const auto &g = grouped_armors[i];
+            if (!g.empty() && g[0].class_id == id) return static_cast<int>(i);
         }
+        return -1;
+    };
+
+    // Helper: reset init yaw ONLY when searching (per your requirement)
+    auto reset_init_yaw_from_imu = [&]() {
+        std::shared_ptr<IMUState> imu_ptr = std::atomic_load(&shared_.imu);
+        if (imu_ptr && imu_ptr->euler_angle.size() >= 3) {
+            const float yaw_deg = imu_ptr->euler_angle[2];
+            std::atomic_store(&scalars_.initial_yaw, yaw_deg);
+        } else {
+            std::atomic_store(&scalars_.initial_yaw, 0.0f);
+        }
+    };
+
+    // Ensure TTL has a sane default
+    if (ttl_ <= 0.0f) ttl_ = SELECTOR_TTL;
+
+    // ======================= FSM =======================
+    if (tracking_fsm_ == TrackingFSM::TARGET_SEARCHING) {
+        // Always reset init_yaw when searching
+        reset_init_yaw_from_imu();
+
+        const int best_idx = pick_best_group_idx();
+        if (best_idx >= 0) {
+            selected_armors = grouped_armors[best_idx];
+            selected_robot_id_ = selected_armors[0].class_id;
+            ttl_ = SELECTOR_TTL;
+            tracking_fsm_ = TrackingFSM::TARGET_LOCKED;
+        } else {
+            // stay searching
+            selected_robot_id_ = -1;
+            ttl_ = SELECTOR_TTL;
+        }
+        return;
     }
-    
-    if (best_group_idx >= 0) {
-        selected_armors = grouped_armors[best_group_idx];
+
+    // If we are locked or temp-lost, prefer the previously selected id if present
+    const int locked_idx = find_group_by_id(selected_robot_id_);
+
+    if (tracking_fsm_ == TrackingFSM::TARGET_LOCKED) {
+        if (locked_idx >= 0) {
+            // Still see same robot -> keep locked, refresh TTL
+            selected_armors = grouped_armors[locked_idx];
+            ttl_ = SELECTOR_TTL;
+            // remain TARGET_LOCKED
+        } else {
+            // Missing -> decay TTL, go temp-lost
+            ttl_ -= TTL_DECAY;
+            tracking_fsm_ = TrackingFSM::TARGET_TEMPORARY_LOST;
+            // do not change selected_robot_id_ here
+        }
+        return;
     }
+
+    if (tracking_fsm_ == TrackingFSM::TARGET_TEMPORARY_LOST) {
+        if (locked_idx >= 0) {
+            // Reacquired -> back to locked, refresh TTL
+            selected_armors = grouped_armors[locked_idx];
+            ttl_ = SELECTOR_TTL;
+            tracking_fsm_ = TrackingFSM::TARGET_LOCKED;
+            return;
+        }
+
+        // Still missing
+        if (ttl_ > 0.0f) {
+            ttl_ -= TTL_DECAY;
+            // stay in TARGET_TEMPORARY_LOST
+            return;
+        }
+
+        // TTL expired -> back to searching, reset id + ttl + init_yaw (next call)
+        tracking_fsm_ = TrackingFSM::TARGET_SEARCHING;
+        selected_robot_id_ = -1;
+        ttl_ = SELECTOR_TTL;
+        reset_init_yaw_from_imu();
+        return;
+    }
+
+    // Fallback: if unknown state, reset to searching
+    tracking_fsm_ = TrackingFSM::TARGET_SEARCHING;
+    selected_robot_id_ = -1;
+    ttl_ = SELECTOR_TTL;
+    reset_init_yaw_from_imu();
 }
 
 std::unique_ptr<RobotState>
@@ -560,57 +665,134 @@ inline bool solve_linear_sys(
     float yaw1, float yaw2,
     float det1_x, float det1_z,
     float det2_x, float det2_z,
-    float &x, float &z, float &r1, float &r2)
-{
-    Eigen::Matrix4f A;
-    A << 1, 0, std::sin(yaw1), 0,
-         0, 1, -std::cos(yaw1), 0,
-         1, 0, 0, std::cos(yaw2),
-         0, 1, 0, -std::sin(yaw2);
-    Eigen::FullPivLU<Eigen::Matrix4f> lu(A);
-    if (lu.rank() < 4) {
-        return false;
-    }
-    Eigen::Vector4f b;
-    b << det1_x, det1_z, det2_x, det2_z;
-    Eigen::Vector4f solution = A.fullPivLu().solve(b);
-    x  = solution(0);
-    z  = solution(1);
-    r1 = solution(2);
-    r2 = solution(3);
+    float &x, float &z, float &r1, float &r2) {
 
+    float s1 = std::sin(yaw1), c1 = std::cos(yaw1);
+    float s2 = std::sin(yaw2), c2 = std::cos(yaw2);
+
+    const float denom_x = (s1 - s2);
+    const float denom_z = (c1 - c2);
+
+    const float eps = 1e-4f;
+    bool ok_x = std::fabs(denom_x) > eps;
+    bool ok_z = std::fabs(denom_z) > eps;
+
+    if (!ok_x && !ok_z) return false;
+
+    float r_x = 0.f, r_z = 0.f;
+    if (ok_x) r_x = (det1_x - det2_x) / denom_x;
+    if (ok_z) r_z = (det2_z - det1_z) / denom_z; 
+    float r = 0.f;
+    if (ok_x && ok_z) {
+        const float wx = std::fabs(denom_x);
+        const float wz = std::fabs(denom_z);
+        r = (wx * r_x + wz * r_z) / (wx + wz);
+    } else if (ok_x) {
+        r = r_x;
+    } else {
+        r = r_z;
+    }
+
+    if (r < 0.f) {
+        r = -r;
+        yaw1 = yaw1 + static_cast<float>(M_PI);
+        yaw2 = yaw2 + static_cast<float>(M_PI);
+        s1 = std::sin(yaw1); c1 = std::cos(yaw1);
+        s2 = std::sin(yaw2); c2 = std::cos(yaw2);
+    }
+
+    const float x1 = det1_x - r * s1;
+    const float x2 = det2_x - r * s2;
+    const float z1 = det1_z + r * c1;
+    const float z2 = det2_z + r * c2;
+
+    x = 0.5f * (x1 + x2);
+    z = 0.5f * (z1 + z2);
+
+    r1 = r;
+    r2 = r;
     return true;
 }
 
 inline bool from_two_armors(const DetectionResult &det1, const DetectionResult &det2,
                            RobotState &robot, bool &valid) {
+
     float yaw1 = det1.yaw_rad;
     float yaw2 = det2.yaw_rad;
+
+    // Assumption: det1 yaw < det2 yaw, enforce strict 90deg constraint
     correct_yaw_to_90(yaw1, yaw2);
+
+    float x_new, z_new, r1_new, r2_new;
+
+    bool ok = solve_linear_sys(
+        yaw1, yaw2,
+        det1.tvec[0], det1.tvec[2],
+        det2.tvec[0], det2.tvec[2],
+        x_new, z_new, r1_new, r2_new
+    );
+    if (!ok) return false;
+
+    // Height / TY as you already do (keep)
+    const float h_new  = det1.tvec[1] - det2.tvec[1];
+    const float ty_new = det1.tvec[1];
+
+    // Update yaw as you already do OR keep it fixed from geometry; your code below is fine.
+    // --- your existing yaw update logic ---
     if (!valid) {
-        //define the robot yaw to be det1's yaw, TODO: make sure that det1 yaw < det 2 yaw and they are in -90 < yaw < 90 deg
-        robot.state[IDX_YAW]  = yaw1;
-        robot.state[IDX_H]    = det1.tvec[1] - det2.tvec[1];
-        robot.state[IDX_TY]   = det1.tvec[1];
-        bool solve_lin_sys_success = solve_linear_sys(yaw1, yaw2, det1.tvec[0], det1.tvec[2], det2.tvec[0], det2.tvec[2],
-                                            robot.state[IDX_TX], robot.state[IDX_TZ], robot.state[IDX_R1], robot.state[IDX_R2]);
-        valid = solve_lin_sys_success;
-        return solve_lin_sys_success;
+        robot.state[IDX_YAW] = yaw1;
     } else {
         const float prev_yaw = robot.state[IDX_YAW];
         const int sector_armor_1 = sector_yaw(yaw1, prev_yaw);
         const int sector_armor_2 = sector_yaw(yaw2, prev_yaw);
-//check correctness -> a way to calculate true yaw based on the 2 measured yaw
         float y1 = wrap_pi(yaw1 + sector_armor_1 * M_PI_2);
         float y2 = wrap_pi(yaw2 + sector_armor_2 * M_PI_2);
         float mean_yaw = std::atan2(std::sin(y1) + std::sin(y2), std::cos(y1) + std::cos(y2));
         robot.state[IDX_YAW] = wrap_pi(mean_yaw);
-
-        robot.state[IDX_H]   = (sector_armor_1 % 2) ? (det2.tvec[1] - det1.tvec[1]) : (det1.tvec[1] - det2.tvec[1]);
-        robot.state[IDX_TY]  = (sector_armor_1 % 2) ? det2.tvec[1] : det1.tvec[1];
-        bool solve_lin_sys_success = solve_linear_sys(yaw1, yaw2, det1.tvec[0], det1.tvec[2], det2.tvec[0], det2.tvec[2],
-                                            robot.state[IDX_TX], robot.state[IDX_TZ], robot.state[IDX_R1], robot.state[IDX_R2]);
-        return solve_lin_sys_success;
     }
+
+    // -------- stability layer (smoothing + constraints) ----------
+    // Use a small alpha for stability; increase if laggy.
+    const float alpha = valid ? 0.2f : 1.0f; // first time snap, then smooth
+
+    auto smooth = [&](float &state, float meas) {
+        state = (1.0f - alpha) * state + alpha * meas;
+    };
+
+    // Enforce r >= 0 and unify r1/r2 (ground truth)
+    const float r_new = std::max(0.0f, 0.5f * (r1_new + r2_new));
+
+    if (!valid) {
+        robot.state[IDX_TX] = x_new;
+        robot.state[IDX_TZ] = z_new;
+        robot.state[IDX_R1] = r_new;
+        robot.state[IDX_R2] = r_new;
+        robot.state[IDX_H]  = h_new;
+        robot.state[IDX_TY] = ty_new;
+        valid = true;
+        return true;
+    }
+
+    // Optional: outlier rejection to stop flicker on bad PnP frames
+    const float dx = x_new - robot.state[IDX_TX];
+    const float dz = z_new - robot.state[IDX_TZ];
+    const float jump = std::sqrt(dx*dx + dz*dz);
+    if (jump > 1.0f) { // 1 meter jump in one frame? probably bad PnP
+        return true;   // keep previous robot
+    }
+
+    smooth(robot.state[IDX_TX], x_new);
+    smooth(robot.state[IDX_TZ], z_new);
+    smooth(robot.state[IDX_R1], r_new);
+    smooth(robot.state[IDX_R2], r_new);
+    smooth(robot.state[IDX_H],  h_new);
+    smooth(robot.state[IDX_TY], ty_new);
+
+    // Re-enforce non-negativity after smoothing
+    robot.state[IDX_R1] = std::max(0.0f, robot.state[IDX_R1]);
+    robot.state[IDX_R2] = std::max(0.0f, robot.state[IDX_R2]);
+
+    return true;
 }
+
 

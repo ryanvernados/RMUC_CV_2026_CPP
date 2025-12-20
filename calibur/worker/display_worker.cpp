@@ -189,8 +189,8 @@ void DisplayWorker::draw_target_dot(cv::Mat &img,
         return;
     }
 
-    const float fx = 515.0f;
-    const float fy = 686.0f;
+    const float fx = 1159.0f;
+    const float fy = 1159.0f;
     const float cx = width / 2.0f;
     const float cy = height / 2.0f;
 

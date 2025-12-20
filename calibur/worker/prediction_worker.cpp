@@ -199,7 +199,7 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     // static const Eigen::Quaternionf q_IC = Eigen::Quaternionf::Identity();;
     // Eigen::Matrix3f R_world2cam = make_R_world2cam_from_quat(q_WI_local, q_IC);
 
-    if (!get_imu_yaw_pitch(shared_, imu_yaw, imu_pitch)) {
+    if (!get_imu_yaw_pitch(shared_, scalars_, imu_yaw, imu_pitch)) {
         out.aim = out.fire = out.chase = 0;
         out.yaw = out.pitch = 0.0f;
         std::cout <<"[PRED ERROR] Invalid IMU pitch yaw!\n";

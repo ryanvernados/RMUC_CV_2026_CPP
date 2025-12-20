@@ -35,10 +35,10 @@ void* init_camera_stub() {
         MV_CC_DestroyHandle(handle);
         return nullptr;
     }
-    MV_CC_SetIntValue(handle, "OffsetX", 400);
-    MV_CC_SetIntValue(handle, "OffsetY", 220);
-    MV_CC_SetIntValue(handle, "Height", 640);
-    MV_CC_SetIntValue(handle, "Width", 640);
+    // MV_CC_SetIntValue(handle, "OffsetX", 0);
+    // MV_CC_SetIntValue(handle, "OffsetY", 0);
+    MV_CC_SetIntValue(handle, "Height", 1080);
+    MV_CC_SetIntValue(handle, "Width", 1080);
     MV_CC_SetEnumValue(handle, "ExposureAuto", 2); 
     MV_CC_SetFloatValue(handle, "ExposureTime", 7000.0f);
     MV_CC_SetEnumValue(handle, "GainAuto", 2);

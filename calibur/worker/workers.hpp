@@ -22,7 +22,8 @@ const std::string VIDEO_PATH        = "./sample_videos/video1.mp4";
 #define DEFAULT_ROBOT_RADIUS                    0.2f
 #define DEFAULT_ROBOT_HEIGHT                    0.0f
 #define SELECTOR_TTL                            0.5f
-static constexpr int NUM_PARTICLES = 10000;
+constexpr float TTL_DECAY    = 0.01f;
+static constexpr int NUM_PARTICLES              = 10000;
 #define ALPHA_BULLET_SPEED                      0.1f
 #define ALPHA_PROCESSING_TIME                   0.1f
 #define PREDICTION_CONVERGENCE_THRESHOLD        0.01f

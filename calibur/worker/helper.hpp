@@ -99,6 +99,7 @@ static inline Eigen::Matrix3f make_R_world2cam_from_quat(
 }
 
 inline bool get_imu_yaw_pitch(const SharedLatest &shared,
+                              const SharedScalars &scalars,
                               float &yaw_left_pos,
                               float &pitch_down_pos) {
     std::shared_ptr<IMUState> imu_ptr = std::atomic_load(&shared.imu);
@@ -107,10 +108,16 @@ inline bool get_imu_yaw_pitch(const SharedLatest &shared,
     const IMUState &imu = *imu_ptr;
     if (imu.euler_angle.size() < 3) return false;
 
-    float pitch_deg = imu.euler_angle[1];
-    float yaw_deg   = imu.euler_angle[2]; 
-    pitch_down_pos = -deg2rad(pitch_deg);
-    yaw_left_pos   = -deg2rad(yaw_deg);
+    const float init_yaw = std::atomic_load(&scalars.initial_yaw);
+
+    const float pitch_deg = -imu.euler_angle[1];  // assumed gravity-referenced (ground)
+    const float yaw_deg   = imu.euler_angle[2];
+
+    // Pitch stays ABSOLUTE wrt ground (no init subtraction)
+    pitch_down_pos = deg2rad(pitch_deg);
+
+    // Yaw can be relative heading
+    yaw_left_pos   = deg2rad(yaw_deg - init_yaw);
 
     return true;
 }
@@ -119,18 +126,18 @@ inline bool get_imu_yaw_pitch(const SharedLatest &shared,
 inline Eigen::Matrix3f make_R_cam2world_from_yaw_pitch(float yaw_left_pos,
                                                        float pitch_down_pos)
 {
-    const float cy = std::cos(-yaw_left_pos);
-    const float sy = std::sin(-yaw_left_pos);
-    const float cp = std::cos(-pitch_down_pos);
-    const float sp = std::sin(-pitch_down_pos);
+    // Axes: x right, y up, z forward
+    // yaw_left_pos: + about world +Y (ground up)
+    // pitch_down_pos: + means pitch down; RH rotation about +X would pitch "up",
+    // so we use -pitch_down_pos about +X.
+    const Eigen::AngleAxisf Ry(yaw_left_pos,      Eigen::Vector3f::UnitY());
+    const Eigen::AngleAxisf Rx(pitch_down_pos,   Eigen::Vector3f::UnitX());
 
-    Eigen::Matrix3f R;
+    // World->Cam (apply pitch then yaw for typical yaw-then-pitch gimbal)
+    const Eigen::Matrix3f R_world2cam = (Ry * Rx).toRotationMatrix();
 
-    R <<  cy,        sy * sp,    -sy * cp,
-          0.f,       cp,         -sp,
-          sy,       -cy * sp,     cy * cp;
-
-    return R;
+    // Return Cam->World
+    return R_world2cam.transpose();
 }
 
 
@@ -139,6 +146,7 @@ inline Eigen::Matrix3f make_R_world2cam_from_yaw_pitch(float yaw_left_pos,
     Eigen::Matrix3f R_cam2world = make_R_cam2world_from_yaw_pitch(yaw_left_pos, pitch_down_pos);
     return R_cam2world.transpose();
 }
+
 
 
 inline void clamp_to_gimbal_limits(float &yaw, float &pitch) {
