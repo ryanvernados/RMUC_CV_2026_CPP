@@ -246,6 +246,13 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     const float drop_correction = 0.5f * 9.81f * t_bullet_travel * t_bullet_travel;
     armor_cam[1] += drop_correction;
 
+    // armor_cam[1] -= drop_correction; 
+
+    // const float GUN_OFFSET_X = 0.05f; 
+    
+    // armor_cam[0] -= GUN_OFFSET_X; 
+
+
     // ----------------- 8) Gimbal correction (yaw, pitch) ----------
     calculate_gimbal_correction(armor_cam, correction);
 
@@ -279,52 +286,54 @@ void PredictionWorker::compute_prediction(const RobotState &rs,
     float dp = raw_pitch - vis_pitch_;
 
     // handle yaw wrap
-    if (dy > M_PI)       dy -= 2.0f * M_PI;
-    else if (dy < -M_PI) dy += 2.0f * M_PI;
+    // if (dy > M_PI)       dy -= 2.0f * M_PI;
+    // else if (dy < -M_PI) dy += 2.0f * M_PI;
 
-    const float error_mag      = std::sqrt(dy*dy + dp*dp);
-    const float alpha_min      = 0.3f;
-    const float alpha_max      = 0.7f;
-    const float error_threshold= 0.1f;   // ~5.7 deg
+    // const float error_mag      = std::sqrt(dy*dy + dp*dp);
+    // const float alpha_min      = 0.3f;
+    // const float alpha_max      = 0.7f;
+    // const float error_threshold= 0.1f;   // ~5.7 deg
 
-    float alpha = alpha_min +
-                  (alpha_max - alpha_min) *
-                  std::min(1.0f, error_mag / error_threshold);
+    // float alpha = alpha_min +
+    //               (alpha_max - alpha_min) *
+    //               std::min(1.0f, error_mag / error_threshold);
 
-    const float max_step = 0.05f;        // ~2.9 deg per update
-    dy = std::clamp(dy, -max_step, max_step);
-    dp = std::clamp(dp, -max_step, max_step);
+    // const float max_step = 0.05f;        // ~2.9 deg per update
+    // dy = std::clamp(dy, -max_step, max_step);
+    // dp = std::clamp(dp, -max_step, max_step);
 
-    vis_yaw_   += alpha * dy;
-    vis_pitch_ += alpha * dp;
+    // vis_yaw_   += alpha * dy;
+    // vis_pitch_ += alpha * dp;
 
-    const float deadzone = 0.001f;       // ~0.06 deg
-    if (std::fabs(vis_yaw_)   < deadzone) vis_yaw_   = 0.0f;
-    if (std::fabs(vis_pitch_) < deadzone) vis_pitch_ = 0.0f;
+    // const float deadzone = 0.001f;       // ~0.06 deg
+    // if (std::fabs(vis_yaw_)   < deadzone) vis_yaw_   = 0.0f;
+    // if (std::fabs(vis_pitch_) < deadzone) vis_pitch_ = 0.0f;
 
-    clamp_to_gimbal_limits(vis_yaw_, vis_pitch_);
+    // clamp_to_gimbal_limits(vis_yaw_, vis_pitch_);
 
-    // target reachability check uses raw correction (hardware limits)
-    bool target_reachable = is_target_reachable(raw_yaw, raw_pitch);
-    // if (!target_reachable) {
-    //     std::cout << "[PRED WARNING] Target out of gimbal range! raw_pitch="
-    //               << (raw_pitch * 180.0f / M_PI) << " deg\n";
+    // // target reachability check uses raw correction (hardware limits)
+    // bool target_reachable = is_target_reachable(raw_yaw, raw_pitch);
+    // // if (!target_reachable) {
+    // //     std::cout << "[PRED WARNING] Target out of gimbal range! raw_pitch="
+    // //               << (raw_pitch * 180.0f / M_PI) << " deg\n";
+    // //     fire_state = false;
+    // // }
+
+    // if (is_at_pitch_limit(vis_pitch_)) {
     //     fire_state = false;
+    //     static int limit_warning_counter = 0;
+    //     if (++limit_warning_counter % 30 == 0) {
+    //         char status[128];
+    //         get_gimbal_status_string(vis_yaw_, vis_pitch_, status, sizeof(status));
+    //         std::cout << "[GIMBAL LIMIT] " << status << std::endl;
+    //     }
     // }
 
-    if (is_at_pitch_limit(vis_pitch_)) {
-        fire_state = false;
-        static int limit_warning_counter = 0;
-        if (++limit_warning_counter % 30 == 0) {
-            char status[128];
-            get_gimbal_status_string(vis_yaw_, vis_pitch_, status, sizeof(status));
-            std::cout << "[GIMBAL LIMIT] " << status << std::endl;
-        }
-    }
-
     // ----------------- 10) Write Outputs --------------------------
-    out.yaw   = vis_yaw_;
-    out.pitch = vis_pitch_;
+    out.yaw = raw_yaw;
+    out.pitch = raw_pitch;
+    //out.yaw   = vis_yaw_;
+    //out.pitch = vis_pitch_;
     out.aim   = aim_state   ? 1 : 0;
     out.fire  = fire_state  ? 1 : 0;
     out.chase = chase_state ? 1 : 0;
