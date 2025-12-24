@@ -481,6 +481,9 @@ void DetectionWorker::select_armor(const std::vector<std::vector<DetectionResult
         tracking_fsm_ = TrackingFSM::TARGET_SEARCHING;
         selected_robot_id_ = -1;
         ttl_ = SELECTOR_TTL;
+
+        this->has_prev_robot_ = false;
+
         reset_init_yaw_from_imu();
         return;
     }
@@ -489,6 +492,7 @@ void DetectionWorker::select_armor(const std::vector<std::vector<DetectionResult
     tracking_fsm_ = TrackingFSM::TARGET_SEARCHING;
     selected_robot_id_ = -1;
     ttl_ = SELECTOR_TTL;
+    this->has_prev_robot_ = false;
     reset_init_yaw_from_imu();
 }
 
@@ -645,7 +649,7 @@ bool from_one_armor(const DetectionResult &det, RobotState &robot, bool &valid) 
         const int sector = sector_yaw(yaw_meas, prev_yaw);
         robot.state[IDX_YAW] = wrap_pi(yaw_meas + M_PI_2 * sector);
         const float r = sector % 2 ? robot.state[IDX_R2] : robot.state[IDX_R1];
-        const float h = sector % 2 ? robot.state[IDX_H] : 0;
+        const float h = sector % 2 ? robot.state[IDX_H] : 0.0f;
 
         robot.state[IDX_TX] = det.tvec[0] - r * s;
         robot.state[IDX_TY] = det.tvec[1] + h;
@@ -717,50 +721,79 @@ inline bool solve_linear_sys(
 inline bool from_two_armors(const DetectionResult &det1, const DetectionResult &det2,
                            RobotState &robot, bool &valid) {
 
-    float yaw1 = det1.yaw_rad;
-    float yaw2 = det2.yaw_rad;
+    const DetectionResult* pDet1 = &det1;
+    const DetectionResult* pDet2 = &det2;
 
-    // Assumption: det1 yaw < det2 yaw, enforce strict 90deg constraint
-    correct_yaw_to_90(yaw1, yaw2);
+    // Calculate raw angle difference
+    float diff = wrap_pi(det1.yaw_rad - det2.yaw_rad);
+    
+    // If diff is positive (e.g. 90 deg), B is to the "left" of A.
+    // We want PnP solver to assume yaw1 < yaw2 roughly. 
+    // Actually, just sorting by yaw helps consistency.
+    if (det1.yaw_rad > det2.yaw_rad) {
+        std::swap(pDet1, pDet2);
+    }
+    
+    // Re-verify the wrap-around case (e.g. 179 vs -179)
+    // If the gap is massive, they are crossing the PI/-PI boundary
+    if (std::abs(pDet1->yaw_rad - pDet2->yaw_rad) > M_PI) {
+        std::swap(pDet1, pDet2);
+    }
+
+    float yaw1 = pDet1->yaw_rad;
+    float yaw2 = pDet2->yaw_rad;
+
+    // 2. Enforce Strict 90 Degree Geometry
+    float mid_yaw = std::atan2(std::sin(yaw1) + std::sin(yaw2), 
+                               std::cos(yaw1) + std::cos(yaw2));
+    
+    float ideal_yaw1 = wrap_pi(mid_yaw - M_PI_4); 
+    float ideal_yaw2 = wrap_pi(mid_yaw + M_PI_4);
 
     float x_new, z_new, r1_new, r2_new;
 
     bool ok = solve_linear_sys(
-        yaw1, yaw2,
-        det1.tvec[0], det1.tvec[2],
-        det2.tvec[0], det2.tvec[2],
+        ideal_yaw1, ideal_yaw2,
+        pDet1->tvec[0], pDet1->tvec[2],
+        pDet2->tvec[0], pDet2->tvec[2],
         x_new, z_new, r1_new, r2_new
     );
     if (!ok) return false;
 
-    // Height / TY as you already do (keep)
-    const float h_new  = det1.tvec[1] - det2.tvec[1];
-    const float ty_new = det1.tvec[1];
+    // 3. Height Calculation 
+    // If det1 is Right and det2 is Front.
+    // We usually want H to be positive if side armors are higher.
+    // Just ensure consistency: H = Difference between Armor1(Right) and Armor2(Front)
+    // This depends on your physical robot config. Assuming standard:
+    const float h_new  = pDet1->tvec[1] - pDet2->tvec[1]; 
+    const float ty_new = pDet2->tvec[1]; // Base height on one armor (e.g., front)
 
-    // Update yaw as you already do OR keep it fixed from geometry; your code below is fine.
-    // --- your existing yaw update logic ---
+    // 4. Update Yaw
     if (!valid) {
-        robot.state[IDX_YAW] = yaw1;
+        robot.state[IDX_YAW] = mid_yaw; // Use the midpoint yaw
     } else {
         const float prev_yaw = robot.state[IDX_YAW];
-        const int sector_armor_1 = sector_yaw(yaw1, prev_yaw);
-        const int sector_armor_2 = sector_yaw(yaw2, prev_yaw);
-        float y1 = wrap_pi(yaw1 + sector_armor_1 * M_PI_2);
-        float y2 = wrap_pi(yaw2 + sector_armor_2 * M_PI_2);
-        float mean_yaw = std::atan2(std::sin(y1) + std::sin(y2), std::cos(y1) + std::cos(y2));
-        robot.state[IDX_YAW] = wrap_pi(mean_yaw);
+        // Smoothly update yaw based on the calculated midpoint
+        float diff = wrap_pi(mid_yaw - prev_yaw);
+        robot.state[IDX_YAW] = wrap_pi(prev_yaw + diff * 0.5f); // Soft update
     }
 
-    // -------- stability layer (smoothing + constraints) ----------
-    // Use a small alpha for stability; increase if laggy.
-    const float alpha = valid ? 0.2f : 1.0f; // first time snap, then smooth
-
+    // 5. Update State
+    const float alpha = valid ? 0.6f : 1.0f;
     auto smooth = [&](float &state, float meas) {
         state = (1.0f - alpha) * state + alpha * meas;
     };
 
-    // Enforce r >= 0 and unify r1/r2 (ground truth)
     const float r_new = std::max(0.0f, 0.5f * (r1_new + r2_new));
+
+    // Jump check (Outlier rejection)
+    if (valid) {
+        const float dx = x_new - robot.state[IDX_TX];
+        const float dz = z_new - robot.state[IDX_TZ];
+        if (dx*dx + dz*dz > 0.6f) { // 0.6m threshold squared
+            return true; // Reject this frame, keep old state
+        }
+    }
 
     if (!valid) {
         robot.state[IDX_TX] = x_new;
@@ -770,27 +803,19 @@ inline bool from_two_armors(const DetectionResult &det1, const DetectionResult &
         robot.state[IDX_H]  = h_new;
         robot.state[IDX_TY] = ty_new;
         valid = true;
-        return true;
+    } else {
+        smooth(robot.state[IDX_TX], x_new);
+        smooth(robot.state[IDX_TZ], z_new);
+        smooth(robot.state[IDX_R1], r_new);
+        smooth(robot.state[IDX_R2], r_new);
+        // Be careful smoothing H, it might oscillate if detections swap often
+        smooth(robot.state[IDX_H],  h_new); 
+        smooth(robot.state[IDX_TY], ty_new);
     }
-
-    // Optional: outlier rejection to stop flicker on bad PnP frames
-    const float dx = x_new - robot.state[IDX_TX];
-    const float dz = z_new - robot.state[IDX_TZ];
-    const float jump = std::sqrt(dx*dx + dz*dz);
-    if (jump > 1.0f) { // 1 meter jump in one frame? probably bad PnP
-        return true;   // keep previous robot
-    }
-
-    smooth(robot.state[IDX_TX], x_new);
-    smooth(robot.state[IDX_TZ], z_new);
-    smooth(robot.state[IDX_R1], r_new);
-    smooth(robot.state[IDX_R2], r_new);
-    smooth(robot.state[IDX_H],  h_new);
-    smooth(robot.state[IDX_TY], ty_new);
-
-    // Re-enforce non-negativity after smoothing
-    robot.state[IDX_R1] = std::max(0.0f, robot.state[IDX_R1]);
-    robot.state[IDX_R2] = std::max(0.0f, robot.state[IDX_R2]);
+    
+    // Final safety clamp
+    robot.state[IDX_R1] = std::max(0.05f, robot.state[IDX_R1]);
+    robot.state[IDX_R2] = std::max(0.05f, robot.state[IDX_R2]);
 
     return true;
 }
